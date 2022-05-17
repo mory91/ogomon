@@ -6,6 +6,8 @@ import (
 	"github.com/spf13/cobra"
 	jww "github.com/spf13/jwalterweatherman"
 	"ogomon/pkg/system"
+	"os"
+	"os/signal"
 	"time"
 )
 
@@ -21,18 +23,36 @@ func (m Monitor) Start() error {
 	var prevSizeVm uint = 0
 	var prevSizeIOReadBytes uint64 = 0
 	var prevSizeIOWriteBytes uint64 = 0
-	for {
-		stat, _ := m.proc.Stat()
-		io, _ := m.proc.IO()
-		allocatedVm := stat.VSize - prevSizeVm
-		allocatedReadBytes := io.ReadBytes - prevSizeIOReadBytes
-		allocatedWriteBytes := io.WriteBytes - prevSizeIOWriteBytes
-		jww.INFO.Println(fmt.Sprintf("%d %d %d %d", allocatedVm, allocatedReadBytes, allocatedWriteBytes, time.Now().UnixMilli()))
-		prevSizeVm = stat.VSize
-		prevSizeIOReadBytes = io.ReadBytes
-		prevSizeIOWriteBytes = io.WriteBytes
-		time.Sleep(time.Millisecond * 10)
-	}
+
+	ticker := time.NewTicker(time.Millisecond * 10)
+
+	cancelSig := make(chan os.Signal, 1)
+	signal.Notify(cancelSig, os.Interrupt)
+
+	done := make(chan bool)
+
+	go func() {
+		for {
+			select {
+			case t := <-ticker.C:
+				stat, _ := m.proc.Stat()
+				io, _ := m.proc.IO()
+				allocatedVm := stat.VSize - prevSizeVm
+				allocatedReadBytes := io.ReadBytes - prevSizeIOReadBytes
+				allocatedWriteBytes := io.WriteBytes - prevSizeIOWriteBytes
+				jww.INFO.Println(fmt.Sprintf("%d %d %d %d", allocatedVm, allocatedReadBytes, allocatedWriteBytes, t.UnixMilli()))
+				prevSizeVm = stat.VSize
+				prevSizeIOReadBytes = io.ReadBytes
+				prevSizeIOWriteBytes = io.WriteBytes
+			case <-done:
+				return
+			}
+		}
+	}()
+
+	<-cancelSig
+	done <- true
+	jww.INFO.Printf("CANCELLED")
 
 	return nil
 }
