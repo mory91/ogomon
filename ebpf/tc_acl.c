@@ -168,17 +168,13 @@ static __always_inline int parse_tcphdr(struct hdr_cursor *nh,
 }
 
 
-struct packet_frame {
-    __u64 ktime;
-    __u64 packet_size;
-};
 const struct packet_frame *unused __attribute__((unused));
 
 struct bpf_map_def SEC("maps") packet_frame_holder = {
-	.type = BPF_MAP_TYPE_QUEUE,
-	.key_size = 0,
-	.value_size = sizeof(struct packet_frame),
-	.max_entries = 1000,
+	.type = BPF_MAP_TYPE_HASH,
+	.key_size = sizeof(__u64),
+	.value_size = sizeof(__u64),
+	.max_entries = 10000,
 };
 
 struct bpf_map_def SEC("maps") port_holder = {
@@ -189,10 +185,18 @@ struct bpf_map_def SEC("maps") port_holder = {
 };
 
 SEC("classifier_tc_say")
-int tc_say(struct __sk_buff *skb)
+int report_packet_size(struct __sk_buff *skb)
 {
     __u64 key = 0, *port_constraint;
     port_constraint = bpf_map_lookup_elem(&port_holder, &key);
+
+#ifdef XDPACL_DEBUG
+if (port_constraint)
+{
+	        char msg1[] = "port %u\n";
+	        bpf_trace_printk(msg1, sizeof(msg1), *port_constraint);
+	        }
+#endif
 
 	void *data = (void *)(long)skb->data;
 	void *data_end = (void *)(long)skb->data_end;
@@ -211,12 +215,12 @@ int tc_say(struct __sk_buff *skb)
 			{
 				return TC_ACT_OK;
 			}
-			if (port_constraint && bpf_ntohs(tcphdr_l4->dest) == *port_constraint)
+
+			if (port_constraint && (bpf_ntohs(tcphdr_l4->dest) == *port_constraint || bpf_ntohs(tcphdr_l4->source) == *port_constraint))
 			{
-	            struct packet_frame pf;
-	            pf.packet_size = skb->data_end - skb->data;
-	            pf.ktime = bpf_ktime_get_ns();
-	            bpf_map_push_elem(&packet_frame_holder, &pf, BPF_ANY);
+	            __u64 val = skb->data_end - skb->data;
+	            __u64 key = bpf_ktime_get_ns();
+	            bpf_map_update_elem(&packet_frame_holder, &key, &val, BPF_ANY);
     		}
 
     		return TC_ACT_OK;

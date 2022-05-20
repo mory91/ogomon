@@ -5,9 +5,13 @@ import (
 	"github.com/prometheus/procfs"
 	"github.com/spf13/cobra"
 	jww "github.com/spf13/jwalterweatherman"
-	"ogomon/pkg/system"
+	"ogomon/internal"
+	"ogomon/internal/ebpf"
+	"ogomon/pkg"
 	"os"
 	"os/signal"
+	"sync"
+	"syscall"
 	"time"
 )
 
@@ -15,45 +19,56 @@ type Monitor struct {
 	proc procfs.Proc
 }
 
+var (
+	deviceName string
+	port       int
+	wg         sync.WaitGroup
+)
+
 func (m Monitor) Start() error {
 	stat, _ := m.proc.Stat()
 	jww.INFO.Printf("PID: %d", stat.PID)
 	jww.INFO.Printf("Executable Name: %s", stat.Comm)
-
-	var prevSizeVm uint = 0
-	var prevSizeIOReadBytes uint64 = 0
-	var prevSizeIOWriteBytes uint64 = 0
-
 	ticker := time.NewTicker(time.Millisecond * 10)
 
+	stop := make(chan bool)
+	stopCount := 0
+
 	cancelSig := make(chan os.Signal, 1)
-	signal.Notify(cancelSig, os.Interrupt)
+	signal.Notify(cancelSig, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
 
-	done := make(chan bool)
+	networkInTracer, err := ebpf.NewTcNetworkTracer(deviceName, port, ebpf.INGRESS)
+	networkOutTracer, err := ebpf.NewTcNetworkTracer(deviceName, port, ebpf.EGRESS)
+	diskReadTracer, err := internal.NewDiskReadTracer(&m.proc)
+	diskWriteTracer, err := internal.NewDiskWriteTracer(&m.proc)
+	memoryTracer, err := internal.NewMemoryTracer(&m.proc)
 
-	go func() {
-		for {
-			select {
-			case t := <-ticker.C:
-				stat, _ := m.proc.Stat()
-				io, _ := m.proc.IO()
-				allocatedVm := stat.VSize - prevSizeVm
-				allocatedReadBytes := io.ReadBytes - prevSizeIOReadBytes
-				allocatedWriteBytes := io.WriteBytes - prevSizeIOWriteBytes
-				jww.INFO.Println(fmt.Sprintf("%d %d %d %d", allocatedVm, allocatedReadBytes, allocatedWriteBytes, t.UnixMilli()))
-				prevSizeVm = stat.VSize
-				prevSizeIOReadBytes = io.ReadBytes
-				prevSizeIOWriteBytes = io.WriteBytes
-			case <-done:
-				return
-			}
-		}
-	}()
+	tracers := []internal.Tracer{diskWriteTracer, diskReadTracer, memoryTracer, networkInTracer, networkOutTracer}
+	names := []string{"disk_write", "disk_read", "memory", "network_in", "network_out"}
+	for idx, _ := range tracers {
+		stopCount++
+		wg.Add(2)
+		tmpTracer := idx
+		go func() {
+			defer wg.Done()
+			tracers[tmpTracer].Start(*ticker, stop)
+		}()
+		go func() {
+			defer wg.Done()
+			internal.LogTrace(tracers[tmpTracer].Chan(), fmt.Sprintf("%s", names[tmpTracer]))
+		}()
+	}
+
+	if err != nil {
+		panic(err)
+	}
 
 	<-cancelSig
-	done <- true
-	jww.INFO.Printf("CANCELLED")
-
+	ticker.Stop()
+	for i := 0; i < stopCount; i++ {
+		stop <- true
+	}
+	wg.Wait()
 	return nil
 }
 
@@ -62,7 +77,7 @@ var monitorCmd = &cobra.Command{
 	Short: "memory and disk",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		jww.INFO.Println("Monitor Starting")
-		proc, _ := system.GetTargetProc(executableName)
+		proc, _ := pkg.GetTargetProc(executableName)
 		m := Monitor{proc: proc}
 		if err := m.Start(); err != nil {
 			return err
@@ -72,5 +87,7 @@ var monitorCmd = &cobra.Command{
 }
 
 func init() {
+	monitorCmd.Flags().StringVarP(&deviceName, "device-name", "d", "", "Interface Name")
+	monitorCmd.Flags().IntVarP(&port, "port", "p", 0, "Set Port")
 	rootCmd.AddCommand(monitorCmd)
 }

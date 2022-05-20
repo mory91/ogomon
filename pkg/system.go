@@ -1,8 +1,9 @@
-package system
+package pkg
 
 import (
 	"fmt"
 	procfs "github.com/prometheus/procfs"
+	"golang.org/x/sys/unix"
 	"strings"
 )
 
@@ -18,4 +19,13 @@ func GetTargetProc(name string) (procfs.Proc, error) {
 		}
 	}
 	return procfs.Proc{}, fmt.Errorf("not found")
+}
+
+func OpenMemLock() {
+	if err := unix.Setrlimit(unix.RLIMIT_MEMLOCK, &unix.Rlimit{
+		Cur: unix.RLIM_INFINITY,
+		Max: unix.RLIM_INFINITY,
+	}); err != nil {
+		fmt.Println("WARNING: Failed to adjust rlimit: ", err)
+	}
 }
