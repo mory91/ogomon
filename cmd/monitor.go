@@ -26,11 +26,15 @@ var (
 	wg         sync.WaitGroup
 )
 
+const (
+	STEP = 1
+)
+
 func (m Monitor) Start() error {
 	stat, _ := m.proc.Stat()
 	jww.INFO.Printf("PID: %d", stat.PID)
 	jww.INFO.Printf("Executable Name: %s", stat.Comm)
-	ticker := time.NewTicker(time.Millisecond * 10)
+	ticker := time.NewTicker(time.Millisecond * STEP)
 
 	stop := make(chan bool)
 	stopCount := 0
