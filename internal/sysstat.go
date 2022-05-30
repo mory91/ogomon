@@ -35,28 +35,28 @@ func tickDiskRead(t time.Time, tracer *SystemTracer) {
 	stat, _ := tracer.proc.IO()
 	readBytes := stat.ReadBytes - tracer.prevVal
 	tracer.prevVal = stat.ReadBytes
-	tracer.traceChannel <- Trace{TS: uint64(t.UnixNano()), Data: readBytes}
+	tracer.traceChannel <- Trace{TS: GetEventTime(t), Data: readBytes}
 }
 
 func tickDiskWrite(t time.Time, tracer *SystemTracer) {
 	stat, _ := tracer.proc.IO()
 	writeBytes := stat.WriteBytes - tracer.prevVal
 	tracer.prevVal = stat.WriteBytes
-	tracer.traceChannel <- Trace{TS: uint64(t.UnixNano()), Data: writeBytes}
+	tracer.traceChannel <- Trace{TS: GetEventTime(t), Data: writeBytes}
 }
 
 func tickMemory(t time.Time, tracer *SystemTracer) {
 	stat, _ := tracer.proc.Stat()
 	allocatedVm := uint64(stat.VirtualMemory()) - tracer.prevVal
 	tracer.prevVal = uint64(stat.VirtualMemory())
-	tracer.traceChannel <- Trace{TS: uint64(t.UnixNano()), Data: allocatedVm}
+	tracer.traceChannel <- Trace{TS: GetEventTime(t), Data: allocatedVm}
 }
 
 func tickResidentMemory(t time.Time, tracer *SystemTracer) {
 	stat, _ := tracer.proc.Stat()
 	allocatedRss := uint64(stat.ResidentMemory()) - tracer.prevVal
 	tracer.prevVal = uint64(stat.ResidentMemory())
-	tracer.traceChannel <- Trace{TS: uint64(t.UnixNano()), Data: allocatedRss}
+	tracer.traceChannel <- Trace{TS: GetEventTime(t), Data: allocatedRss}
 }
 
 func (systemTracer SystemTracer) Start(ticker time.Ticker, stop chan bool) {
