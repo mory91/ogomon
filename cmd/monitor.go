@@ -2,9 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/prometheus/procfs"
-	"github.com/spf13/cobra"
-	jww "github.com/spf13/jwalterweatherman"
 	"ogomon/internal"
 	"ogomon/internal/ebpf"
 	"ogomon/pkg"
@@ -13,6 +10,10 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/prometheus/procfs"
+	"github.com/spf13/cobra"
+	jww "github.com/spf13/jwalterweatherman"
 )
 
 type Monitor struct {
@@ -42,9 +43,10 @@ func (m Monitor) Start() error {
 	diskReadTracer, err := internal.NewDiskReadTracer(&m.proc)
 	diskWriteTracer, err := internal.NewDiskWriteTracer(&m.proc)
 	memoryTracer, err := internal.NewMemoryTracer(&m.proc)
+	residentMemoryTracer, err := internal.NewResidentMemoryTracer(&m.proc)
 
-	tracers := []internal.Tracer{diskWriteTracer, diskReadTracer, memoryTracer, networkInTracer, networkOutTracer}
-	names := []string{"disk_write", "disk_read", "memory", "network_in", "network_out"}
+	tracers := []internal.Tracer{diskWriteTracer, diskReadTracer, memoryTracer, networkInTracer, networkOutTracer, residentMemoryTracer}
+	names := []string{"disk_write", "disk_read", "memory", "network_in", "network_out", "resident_memory"}
 	for idx, _ := range tracers {
 		stopCount++
 		wg.Add(2)

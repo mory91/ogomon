@@ -1,8 +1,9 @@
 package internal
 
 import (
-	"github.com/prometheus/procfs"
 	"time"
+
+	"github.com/prometheus/procfs"
 )
 
 type DataTicker func(t time.Time, tracer *SystemTracer)
@@ -26,6 +27,10 @@ func NewMemoryTracer(proc *procfs.Proc) (SystemTracer, error) {
 	return SystemTracer{proc: proc, traceChannel: make(chan Trace, 5000), ticker: tickMemory}, nil
 }
 
+func NewResidentMemoryTracer(proc *procfs.Proc) (SystemTracer, error) {
+	return SystemTracer{proc: proc, traceChannel: make(chan Trace, 5000), ticker: tickResidentMemory}, nil
+}
+
 func tickDiskRead(t time.Time, tracer *SystemTracer) {
 	stat, _ := tracer.proc.IO()
 	readBytes := stat.ReadBytes - tracer.prevVal
@@ -42,9 +47,16 @@ func tickDiskWrite(t time.Time, tracer *SystemTracer) {
 
 func tickMemory(t time.Time, tracer *SystemTracer) {
 	stat, _ := tracer.proc.Stat()
-	allocatedVm := uint64(stat.VSize) - tracer.prevVal
-	tracer.prevVal = uint64(stat.VSize)
+	allocatedVm := uint64(stat.VirtualMemory()) - tracer.prevVal
+	tracer.prevVal = uint64(stat.VirtualMemory())
 	tracer.traceChannel <- Trace{TS: uint64(t.UnixNano()), Data: allocatedVm}
+}
+
+func tickResidentMemory(t time.Time, tracer *SystemTracer) {
+	stat, _ := tracer.proc.Stat()
+	allocatedRss := uint64(stat.ResidentMemory()) - tracer.prevVal
+	tracer.prevVal = uint64(stat.ResidentMemory())
+	tracer.traceChannel <- Trace{TS: uint64(t.UnixNano()), Data: allocatedRss}
 }
 
 func (systemTracer SystemTracer) Start(ticker time.Ticker, stop chan bool) {
