@@ -34,7 +34,6 @@ func (m Monitor) Start() error {
 	stat, _ := m.proc.Stat()
 	jww.INFO.Printf("PID: %d", stat.PID)
 	jww.INFO.Printf("Executable Name: %s", stat.Comm)
-	ticker := time.NewTicker(time.Millisecond * STEP)
 
 	stop := make(chan bool)
 	stopCount := 0
@@ -51,10 +50,17 @@ func (m Monitor) Start() error {
 
 	tracers := []internal.Tracer{diskWriteTracer, diskReadTracer, memoryTracer, networkInTracer, networkOutTracer, residentMemoryTracer}
 	names := []string{"disk_write", "disk_read", "memory", "network_in", "network_out", "resident_memory"}
+
+	var tickers []*time.Ticker
+
 	for idx, _ := range tracers {
 		stopCount++
 		wg.Add(2)
 		tmpTracer := idx
+
+		ticker := time.NewTicker(time.Millisecond * STEP)
+		tickers = append(tickers, ticker)
+
 		go func() {
 			defer wg.Done()
 			tracers[tmpTracer].Start(*ticker, stop)
@@ -70,7 +76,7 @@ func (m Monitor) Start() error {
 	}
 
 	<-cancelSig
-	ticker.Stop()
+	//ticker.Stop()
 	for i := 0; i < stopCount; i++ {
 		stop <- true
 	}
