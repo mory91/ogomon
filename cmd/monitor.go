@@ -76,7 +76,9 @@ func (m Monitor) Start() error {
 	}
 
 	<-cancelSig
-	//ticker.Stop()
+	for _, t := range tickers {
+		t.Stop()
+	}
 	for i := 0; i < stopCount; i++ {
 		stop <- true
 	}
