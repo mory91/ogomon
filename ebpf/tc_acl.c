@@ -208,6 +208,7 @@ if (port_constraint)
    	{
    		struct iphdr *iphdr_l3;
    		proto_type = parse_iphdr(&nh, data_end, &iphdr_l3);
+		// TCP
    		if (likely(IPPROTO_TCP == proto_type))
    		{
 			struct tcphdr *tcphdr_l4;
@@ -215,10 +216,47 @@ if (port_constraint)
 			{
 				return TC_ACT_OK;
 			}
-
+#ifdef XDPACL_DEBUG
+if (port_constraint)
+{
+	        char msgt[] = "tcp port %u\n";
+	        bpf_trace_printk(msgt, sizeof(msgt), tcphdr_l4->dest);
+}
+#endif
 			if (port_constraint && (bpf_ntohs(tcphdr_l4->dest) == *port_constraint || bpf_ntohs(tcphdr_l4->source) == *port_constraint))
 			{
 	            __u64 val = skb->data_end - skb->data;
+	            __u64 key = bpf_ktime_get_ns();
+	            bpf_map_update_elem(&packet_frame_holder, &key, &val, BPF_ANY);
+    		}
+
+    		return TC_ACT_OK;
+    	}
+		// UDP
+   		if (likely(IPPROTO_UDP == proto_type))
+   		{
+			struct udphdr *udphdr_l4;
+			if (parse_udphdr(&nh, data_end, &udphdr_l4) < 0)
+			{
+				return TC_ACT_OK;
+			}
+#ifdef XDPACL_DEBUG
+if (port_constraint)
+{
+	        char msgt[] = "udp port %u\n";
+	        bpf_trace_printk(msgt, sizeof(msgt), udphdr_l4->dest);
+}
+#endif
+			if (port_constraint && (bpf_ntohs(udphdr_l4->dest) == *port_constraint || bpf_ntohs(udphdr_l4->source) == *port_constraint))
+			{
+	            __u64 val = skb->data_end - skb->data;
+#ifdef XDPACL_DEBUG
+if (port_constraint)
+{
+	        char msgt[] = "udp size %u\n";
+	        bpf_trace_printk(msgt, sizeof(msgt), val);
+}
+#endif
 	            __u64 key = bpf_ktime_get_ns();
 	            bpf_map_update_elem(&packet_frame_holder, &key, &val, BPF_ANY);
     		}
