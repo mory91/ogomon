@@ -27,7 +27,7 @@ var (
 )
 
 const (
-	STEP = 1
+	STEP = 10
 )
 
 func (m Monitor) Start() error {
