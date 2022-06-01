@@ -219,7 +219,7 @@ if (port_constraint)
 #ifdef XDPACL_DEBUG
 if (port_constraint)
 {
-	        char msgt[] = "tcp port %u %u\n";
+	        char msgt[] = "tcp port %d %d\n";
 	        bpf_trace_printk(msgt, sizeof(msgt), bpf_ntohs(tcphdr_l4->source), bpf_ntohs(tcphdr_l4->dest));
 }
 #endif
