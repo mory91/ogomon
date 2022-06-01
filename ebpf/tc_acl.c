@@ -220,7 +220,7 @@ if (port_constraint)
 if (port_constraint)
 {
 	        char msgt[] = "tcp port %u %u\n";
-	        bpf_trace_printk(msgt, sizeof(msgt), tcphdr_l4->source, tcphdr_l4->dest);
+	        bpf_trace_printk(msgt, sizeof(msgt), bpf_ntohs(tcphdr_l4->source), bpf_ntohs(tcphdr_l4->dest));
 }
 #endif
 			if (port_constraint && (bpf_ntohs(tcphdr_l4->dest) == *port_constraint || bpf_ntohs(tcphdr_l4->source) == *port_constraint))
