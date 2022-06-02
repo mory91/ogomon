@@ -22,7 +22,8 @@ type Monitor struct {
 
 var (
 	deviceName string
-	port       int
+	srcPort    int
+	destPort   int
 	wg         sync.WaitGroup
 )
 
@@ -41,8 +42,11 @@ func (m Monitor) Start() error {
 	cancelSig := make(chan os.Signal, 1)
 	signal.Notify(cancelSig, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
 
-	networkInTracer, err := ebpf.NewTcNetworkTracer(deviceName, port, ebpf.INGRESS)
-	networkOutTracer, err := ebpf.NewTcNetworkTracer(deviceName, port, ebpf.EGRESS)
+	networkInTracer, err := ebpf.NewTcNetworkTracer(deviceName, srcPort, destPort, ebpf.INGRESS)
+	if err != nil {
+		jww.ERROR.Println(err)
+	}
+	networkOutTracer, err := ebpf.NewTcNetworkTracer(deviceName, srcPort, destPort, ebpf.EGRESS)
 	diskReadTracer, err := internal.NewDiskReadTracer(&m.proc)
 	diskWriteTracer, err := internal.NewDiskWriteTracer(&m.proc)
 	memoryTracer, err := internal.NewMemoryTracer(&m.proc)
@@ -102,6 +106,7 @@ var monitorCmd = &cobra.Command{
 
 func init() {
 	monitorCmd.Flags().StringVarP(&deviceName, "device-name", "d", "", "Interface Name")
-	monitorCmd.Flags().IntVarP(&port, "port", "p", 0, "Set Port")
+	monitorCmd.Flags().IntVarP(&srcPort, "src-port", "s", 0, "Set Source Port")
+	monitorCmd.Flags().IntVarP(&destPort, "dest-port", "t", 0, "Set Destination Port")
 	rootCmd.AddCommand(monitorCmd)
 }

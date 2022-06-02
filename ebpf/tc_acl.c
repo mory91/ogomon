@@ -184,20 +184,36 @@ struct bpf_map_def SEC("maps") port_holder = {
 	.max_entries = 1,
 };
 
+static __always_inline bool check_port(__u64 *src_port, __u64 *dest_port, struct tcphdr *tcphdr_l4, struct udphdr *udphdr_l4)
+{
+	__u64 target_source = 0, target_dest = 0;
+	if (tcphdr_l4 != NULL)
+	{
+		target_source = tcphdr_l4->source;
+		target_dest = tcphdr_l4->dest;
+	}
+	if (udphdr_l4 != NULL)
+	{
+		target_source = udphdr_l4->source;
+		target_dest = udphdr_l4->dest;
+	}
+	if (src_port && dest_port)
+	{
+		if (*src_port == bpf_ntohs(target_source) || *src_port == bpf_ntohs(target_dest))
+			return true;
+		if (*dest_port == bpf_ntohs(target_source) || *dest_port == bpf_ntohs(target_dest))
+			return true;
+	}
+	return false;
+}
+
 SEC("classifier_tc_say")
 int report_packet_size(struct __sk_buff *skb)
 {
-    __u64 key = 0, *port_constraint;
-    port_constraint = bpf_map_lookup_elem(&port_holder, &key);
-
-#ifdef XDPACL_DEBUG
-if (port_constraint)
-{
-	        char msg1[] = "port %u\n";
-	        bpf_trace_printk(msg1, sizeof(msg1), *port_constraint);
-	        }
-#endif
-
+    __u64 src_key = 0;
+    __u64 *src_port = bpf_map_lookup_elem(&port_holder, &src_key);
+    __u64 dest_key = 0;
+    __u64 *dest_port = bpf_map_lookup_elem(&port_holder, &dest_key);
 	void *data = (void *)(long)skb->data;
 	void *data_end = (void *)(long)skb->data_end;
 	struct hdr_cursor nh = {.pos = data};
@@ -216,14 +232,7 @@ if (port_constraint)
 			{
 				return TC_ACT_OK;
 			}
-#ifdef XDPACL_DEBUG
-if (port_constraint)
-{
-	        char msgt[] = "tcp port %d %d\n";
-	        bpf_trace_printk(msgt, sizeof(msgt), bpf_ntohs(tcphdr_l4->source), bpf_ntohs(tcphdr_l4->dest));
-}
-#endif
-			if (port_constraint && (bpf_ntohs(tcphdr_l4->dest) == *port_constraint || bpf_ntohs(tcphdr_l4->source) == *port_constraint))
+			if (check_port(src_port, dest_port, tcphdr_l4, NULL))
 			{
 	            __u64 val = skb->data_end - skb->data;
 	            __u64 key = bpf_ktime_get_ns();
@@ -240,23 +249,9 @@ if (port_constraint)
 			{
 				return TC_ACT_OK;
 			}
-#ifdef XDPACL_DEBUG
-if (port_constraint)
-{
-	        char msgt[] = "udp port %u\n";
-	        bpf_trace_printk(msgt, sizeof(msgt), udphdr_l4->dest);
-}
-#endif
-			if (port_constraint && (bpf_ntohs(udphdr_l4->dest) == *port_constraint || bpf_ntohs(udphdr_l4->source) == *port_constraint))
+			if (check_port(src_port, dest_port, NULL, udphdr_l4))
 			{
 	            __u64 val = skb->data_end - skb->data;
-#ifdef XDPACL_DEBUG
-if (port_constraint)
-{
-	        char msgt[] = "udp size %u\n";
-	        bpf_trace_printk(msgt, sizeof(msgt), val);
-}
-#endif
 	            __u64 key = bpf_ktime_get_ns();
 	            bpf_map_update_elem(&packet_frame_holder, &key, &val, BPF_ANY);
     		}

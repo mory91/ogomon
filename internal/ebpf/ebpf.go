@@ -2,12 +2,13 @@ package ebpf
 
 import (
 	"errors"
-	"github.com/cilium/ebpf"
-	jww "github.com/spf13/jwalterweatherman"
-	"golang.org/x/sys/unix"
 	"ogomon/internal"
 	"ogomon/pkg"
 	"time"
+
+	"github.com/cilium/ebpf"
+	jww "github.com/spf13/jwalterweatherman"
+	"golang.org/x/sys/unix"
 
 	"github.com/vishvananda/netlink"
 )
@@ -47,13 +48,14 @@ type Direction uint32
 type TcNetworkTracer struct {
 	tcFilter     *TcFilter
 	traceChannel chan internal.Trace
-	port         int
+	srcPort      int
+	destPort     int
 	direction    Direction
 }
 
 type Cleaner func()
 
-func NewTcNetworkTracer(deviceName string, port int, direction Direction) (TcNetworkTracer, error) {
+func NewTcNetworkTracer(deviceName string, srcPort, destPort int, direction Direction) (TcNetworkTracer, error) {
 	pkg.OpenMemLock()
 	var netlinkDir uint32
 	if direction == EGRESS {
@@ -67,7 +69,7 @@ func NewTcNetworkTracer(deviceName string, port int, direction Direction) (TcNet
 	if err != nil {
 		return TcNetworkTracer{}, err
 	}
-	return TcNetworkTracer{tcFilter: tcFilter, traceChannel: make(chan internal.Trace, 10000), port: port}, nil
+	return TcNetworkTracer{tcFilter: tcFilter, traceChannel: make(chan internal.Trace, 10000), srcPort: srcPort, destPort: destPort}, nil
 }
 
 func (tracer TcNetworkTracer) getEbpfObjects() *tcACLObjects {
@@ -75,7 +77,8 @@ func (tracer TcNetworkTracer) getEbpfObjects() *tcACLObjects {
 }
 
 func (tracer TcNetworkTracer) Start(ticker time.Ticker, stop chan bool) {
-	err := tracer.tcFilter.ebpfObjs.PortHolder.Put(uint64(0), uint64(tracer.port))
+	err := tracer.tcFilter.ebpfObjs.PortHolder.Put(uint64(0), uint64(tracer.srcPort))
+	err = tracer.tcFilter.ebpfObjs.PortHolder.Put(uint64(1), uint64(tracer.destPort))
 	keysOut = make([]uint64, 5000)
 	valsOut = make([]uint64, 5000)
 	if err != nil {
