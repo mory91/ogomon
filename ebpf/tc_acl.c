@@ -66,15 +66,6 @@ static __always_inline int parse_ethhdr(struct hdr_cursor *nh, void *data_end,
 										struct ethhdr **ethhdr_l2)
 {
 	*ethhdr_l2 = nh->pos;
-
-#ifdef XDPACL_DEBUG
-	char msg1[] = "sizeof(struct ethhdr): %u; ETH_HDR_SIZE: %u; isequal: %u\n";
-	bpf_trace_printk(msg1, sizeof(msg1), sizeof(struct ethhdr), ETH_HDR_SIZE, sizeof(struct ethhdr) == ETH_HDR_SIZE ? 1 : 0);
-
-	char msg2[] = "differ: %u;\n";
-	bpf_trace_printk(msg2, sizeof(msg2), ((void *)(*ethhdr_l2 + 1) - (void *)(*ethhdr_l2)));
-#endif
-
 	//  Byte-count bounds check; check if current pointer + size of header is after data_end.
 	if ((void *)((*ethhdr_l2) + 1) > data_end)
 	{
@@ -91,15 +82,6 @@ static __always_inline int parse_iphdr(struct hdr_cursor *nh,
 									   struct iphdr **iphdr_l3)
 {
 	*iphdr_l3 = nh->pos;
-
-#ifdef XDPACL_DEBUG
-	char msg1[] = "sizeof(struct iphdr): %u; IP_HDR_SIZE: %u; isequal: %u\n";
-	bpf_trace_printk(msg1, sizeof(msg1), sizeof(struct iphdr), IP_HDR_SIZE, sizeof(struct iphdr) == IP_HDR_SIZE ? 1 : 0);
-
-	char msg2[] = "differ: %u;\n";
-	bpf_trace_printk(msg2, sizeof(msg2), ((void *)((*iphdr_l3) + 1) - (void *)(*iphdr_l3)));
-#endif
-
 	if ((void *)((*iphdr_l3) + 1) > data_end)
 	{
 		return -1;
@@ -129,15 +111,6 @@ static __always_inline int parse_udphdr(struct hdr_cursor *nh,
 										struct udphdr **udphdr_l4)
 {
 	*udphdr_l4 = nh->pos;
-
-#ifdef XDPACL_DEBUG
-	char msg1[] = "sizeof(struct udphdr): %u; UDP_HDR_SIZE: %u; isequal: %u\n";
-	bpf_trace_printk(msg1, sizeof(msg1), sizeof(struct udphdr), UDP_HDR_SIZE, sizeof(struct udphdr) == UDP_HDR_SIZE ? 1 : 0);
-
-	char msg2[] = "differ: %u;\n";
-	bpf_trace_printk(msg2, sizeof(msg2), ((void *)((*udphdr_l4) + 1) - (void *)(*udphdr_l4)));
-#endif
-
 	if ((void *)((*udphdr_l4) + 1) > data_end)
 	{
 		return -1;
@@ -181,7 +154,7 @@ struct bpf_map_def SEC("maps") port_holder = {
 	.type = BPF_MAP_TYPE_HASH,
 	.key_size = sizeof(__u64),
 	.value_size = sizeof(__u64),
-	.max_entries = 1,
+	.max_entries = 2,
 };
 
 static __always_inline bool check_port(__u64 *src_port, __u64 *dest_port, struct tcphdr *tcphdr_l4, struct udphdr *udphdr_l4)
