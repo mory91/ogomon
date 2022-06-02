@@ -207,7 +207,7 @@ int report_packet_size(struct __sk_buff *skb)
 			}
 			if (check_port(src_port, dest_port, tcphdr_l4, NULL))
 			{
-	            __u64 val = skb->data_end - skb->data;
+	            __u64 val = skb->len;
 	            __u64 key = bpf_ktime_get_ns();
 	            bpf_map_update_elem(&packet_frame_holder, &key, &val, BPF_ANY);
     		}
