@@ -187,11 +187,15 @@ int report_packet_size(struct __sk_buff *skb)
     __u64 *src_port = bpf_map_lookup_elem(&port_holder, &src_key);
     __u64 dest_key = 0;
     __u64 *dest_port = bpf_map_lookup_elem(&port_holder, &dest_key);
+	__u64 val = skb->len;
+	__u64 key = bpf_ktime_get_ns();
+
 	void *data = (void *)(long)skb->data;
 	void *data_end = (void *)(long)skb->data_end;
 	struct hdr_cursor nh = {.pos = data};
     int proto_type;
    	struct ethhdr *ethhdr_l2;
+
    	proto_type = parse_ethhdr(&nh, data_end, &ethhdr_l2);
    	if (bpf_htons(ETH_P_IP) == proto_type)
    	{
@@ -202,16 +206,9 @@ int report_packet_size(struct __sk_buff *skb)
    		{
 			struct tcphdr *tcphdr_l4;
 			if (parse_tcphdr(&nh, data_end, &tcphdr_l4) < 0)
-			{
 				return TC_ACT_OK;
-			}
 			if (check_port(src_port, dest_port, tcphdr_l4, NULL))
-			{
-	            __u64 val = skb->len;
-	            __u64 key = bpf_ktime_get_ns();
 	            bpf_map_update_elem(&packet_frame_holder, &key, &val, BPF_ANY);
-    		}
-
     		return TC_ACT_OK;
     	}
 		// UDP
@@ -219,16 +216,9 @@ int report_packet_size(struct __sk_buff *skb)
    		{
 			struct udphdr *udphdr_l4;
 			if (parse_udphdr(&nh, data_end, &udphdr_l4) < 0)
-			{
 				return TC_ACT_OK;
-			}
 			if (check_port(src_port, dest_port, NULL, udphdr_l4))
-			{
-	            __u64 val = skb->len;
-	            __u64 key = bpf_ktime_get_ns();
 	            bpf_map_update_elem(&packet_frame_holder, &key, &val, BPF_ANY);
-    		}
-
     		return TC_ACT_OK;
     	}
     }
