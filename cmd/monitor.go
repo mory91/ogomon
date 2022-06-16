@@ -28,7 +28,7 @@ var (
 )
 
 const (
-	STEP = 10
+	STEP = 100
 )
 
 func (m Monitor) Start() error {
@@ -62,7 +62,7 @@ func (m Monitor) Start() error {
 		wg.Add(2)
 		tmpTracer := idx
 
-		ticker := time.NewTicker(time.Millisecond * STEP)
+		ticker := time.NewTicker(time.Microsecond * STEP)
 		tickers = append(tickers, ticker)
 
 		go func() {
