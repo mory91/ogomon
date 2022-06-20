@@ -13,7 +13,7 @@ import (
 	"github.com/vishvananda/netlink"
 )
 
-//go:generate go run github.com/cilium/ebpf/cmd/bpf2go@master  tcACL ../../ebpf/tc_acl.c -- -I../../ebpf/include -nostdinc -O3
+//go:generate go run github.com/cilium/ebpf/cmd/bpf2go@master -type event tcACL ../../ebpf/tc_acl.c -- -I../../ebpf/include -nostdinc -O3
 
 const (
 	EGRESS Direction = iota
@@ -34,7 +34,7 @@ const (
 
 var (
 	keysOut []uint64
-	valsOut []uint64
+	valsOut []tcACLEvent
 	qdisc   *netlink.GenericQdisc
 )
 
@@ -80,7 +80,7 @@ func (tracer TcNetworkTracer) Start(ticker time.Ticker, stop chan bool) {
 	err := tracer.tcFilter.ebpfObjs.PortHolder.Put(uint64(0), uint64(tracer.srcPort))
 	err = tracer.tcFilter.ebpfObjs.PortHolder.Put(uint64(1), uint64(tracer.destPort))
 	keysOut = make([]uint64, 5000)
-	valsOut = make([]uint64, 5000)
+	valsOut = make([]tcACLEvent, 5000)
 	if err != nil {
 		jww.INFO.Println(err)
 	}
@@ -197,8 +197,9 @@ func (tracer TcNetworkTracer) tickFrameSize() {
 	for {
 		_, err := tracer.getEbpfObjects().PacketFrameHolder.BatchLookupAndDelete(prevKey, &nextKeyOut, keysOut, valsOut, nil)
 		idx := uint64(0)
-		for keysOut[idx] != 0 {
-			tracer.traceChannel <- internal.Trace{TS: keysOut[idx], Data: valsOut[idx]}
+		for keysOut[idx] != 0 && valsOut[idx].Sport != 0 {
+			nt := internal.NetworkTrace{Len: valsOut[idx].Len, Sport: valsOut[idx].Sport, Dport: valsOut[idx].Dport}
+			tracer.traceChannel <- internal.Trace{TS: keysOut[idx], Data: nt}
 			idx++
 		}
 		if err != nil {

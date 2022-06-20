@@ -7,6 +7,11 @@ type Tracer interface {
 	Chan() chan Trace
 }
 type Trace struct {
-	Data uint64
+	Data interface{}
 	TS   uint64
+}
+type NetworkTrace struct {
+	Len   uint64
+	Sport uint64
+	Dport uint64
 }
