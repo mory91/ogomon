@@ -11,7 +11,6 @@ type DataTicker func(t time.Time, tracer *SystemTracer)
 type SystemTracer struct {
 	proc         *procfs.Proc
 	traceChannel chan Trace
-	prevVal      uint64
 	ticker       DataTicker
 }
 
@@ -24,39 +23,45 @@ func NewDiskWriteTracer(proc *procfs.Proc) (SystemTracer, error) {
 }
 
 func NewMemoryTracer(proc *procfs.Proc) (SystemTracer, error) {
-	return SystemTracer{proc: proc, traceChannel: make(chan Trace, 5000), ticker: tickMemory}, nil
+	return SystemTracer{proc: proc, traceChannel: make(chan Trace, 5000), ticker: tickVirtualMemory}, nil
 }
 
 func NewResidentMemoryTracer(proc *procfs.Proc) (SystemTracer, error) {
 	return SystemTracer{proc: proc, traceChannel: make(chan Trace, 5000), ticker: tickResidentMemory}, nil
 }
 
+func NewDataVirtualMemoryTracer(proc *procfs.Proc) (SystemTracer, error) {
+	return SystemTracer{proc: proc, traceChannel: make(chan Trace, 5000), ticker: tickDataVirtualMemory}, nil
+}
+
 func tickDiskRead(t time.Time, tracer *SystemTracer) {
 	stat, _ := tracer.proc.IO()
-	readBytes := stat.ReadBytes - tracer.prevVal
-	tracer.prevVal = stat.ReadBytes
+	readBytes := stat.ReadBytes
 	tracer.traceChannel <- Trace{TS: GetEventTime(t), Data: readBytes}
 }
 
 func tickDiskWrite(t time.Time, tracer *SystemTracer) {
 	stat, _ := tracer.proc.IO()
-	writeBytes := stat.WriteBytes - tracer.prevVal
-	tracer.prevVal = stat.WriteBytes
+	writeBytes := stat.WriteBytes
 	tracer.traceChannel <- Trace{TS: GetEventTime(t), Data: writeBytes}
 }
 
-func tickMemory(t time.Time, tracer *SystemTracer) {
+func tickVirtualMemory(t time.Time, tracer *SystemTracer) {
 	stat, _ := tracer.proc.Stat()
-	allocatedVm := uint64(stat.VirtualMemory()) - tracer.prevVal
-	tracer.prevVal = uint64(stat.VirtualMemory())
+	allocatedVm := uint64(stat.VirtualMemory())
 	tracer.traceChannel <- Trace{TS: GetEventTime(t), Data: allocatedVm}
 }
 
 func tickResidentMemory(t time.Time, tracer *SystemTracer) {
 	stat, _ := tracer.proc.Stat()
-	allocatedRss := uint64(stat.ResidentMemory()) - tracer.prevVal
-	tracer.prevVal = uint64(stat.ResidentMemory())
+	allocatedRss := uint64(stat.ResidentMemory())
 	tracer.traceChannel <- Trace{TS: GetEventTime(t), Data: allocatedRss}
+}
+
+func tickDataVirtualMemory(t time.Time, tracer *SystemTracer) {
+	status, _ := tracer.proc.NewStatus()
+	allocatedVmData := status.VmData
+	tracer.traceChannel <- Trace{TS: GetEventTime(t), Data: allocatedVmData}
 }
 
 func (systemTracer SystemTracer) Start(ticker time.Ticker, stop chan bool) {
