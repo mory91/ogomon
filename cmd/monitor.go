@@ -28,7 +28,7 @@ var (
 )
 
 const (
-	STEP = 20
+	STEP = 500
 )
 
 func (m Monitor) Start() error {
@@ -51,7 +51,7 @@ func (m Monitor) Start() error {
 	diskWriteTracer, err := internal.NewDiskWriteTracer(&m.proc)
 	memoryTracer, err := internal.NewMemoryTracer(&m.proc)
 	residentMemoryTracer, err := internal.NewResidentMemoryTracer(&m.proc)
-	dataVirtualMemoryTracer, err := internal.NewResidentMemoryTracer(&m.proc)
+	dataVirtualMemoryTracer, err := internal.NewDataVirtualMemoryTracer(&m.proc)
 
 	tracers := []internal.Tracer{diskWriteTracer, diskReadTracer, memoryTracer, networkInTracer, networkOutTracer, residentMemoryTracer, dataVirtualMemoryTracer}
 	names := []string{"disk_write", "disk_read", "memory", "network_in", "network_out", "resident_memory", "data_memory"}
@@ -63,7 +63,7 @@ func (m Monitor) Start() error {
 		wg.Add(2)
 		tmpTracer := idx
 
-		ticker := time.NewTicker(time.Millisecond * STEP)
+		ticker := time.NewTicker(time.Microsecond * STEP)
 		tickers = append(tickers, ticker)
 
 		go func() {
