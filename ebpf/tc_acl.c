@@ -102,9 +102,8 @@ int report_packet_size(struct __sk_buff *skb)
 	
 	proto_type = parse_tcphdr(tcphdr_l4, skb);
 
-	char msg[] = "PROTO_TYPE %d \n";
-	bpf_trace_printk(msg, sizeof(msg), bpf_ntohs(proto_type));
-	bpf_trace_printk(msg, sizeof(msg), skb->len);
+	char msg[] = "PORT %d SIZE %d \n";
+	bpf_trace_printk(msg, sizeof(msg), bpf_ntohs(proto_type), skb->len);
 
 	return -1;
 }
