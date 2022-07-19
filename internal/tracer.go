@@ -14,4 +14,5 @@ type NetworkTrace struct {
 	Len   uint64
 	Sport uint64
 	Dport uint64
+	Direction uint64
 }

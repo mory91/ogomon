@@ -42,19 +42,18 @@ func (m Monitor) Start() error {
 	cancelSig := make(chan os.Signal, 1)
 	signal.Notify(cancelSig, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
 
-	networkInTracer, err := ebpf.NewTcNetworkTracer(deviceName, srcPort, destPort, ebpf.INGRESS)
+	socketTracer, err := ebpf.NewFilterSocketTracer(deviceName, srcPort, destPort)
 	if err != nil {
-		jww.ERROR.Println(err)
+		jww.ERROR.Fatalln(err)
 	}
-	networkOutTracer, err := ebpf.NewTcNetworkTracer(deviceName, srcPort, destPort, ebpf.EGRESS)
 	diskReadTracer, err := internal.NewDiskReadTracer(&m.proc)
 	diskWriteTracer, err := internal.NewDiskWriteTracer(&m.proc)
 	memoryTracer, err := internal.NewMemoryTracer(&m.proc)
 	residentMemoryTracer, err := internal.NewResidentMemoryTracer(&m.proc)
 	dataVirtualMemoryTracer, err := internal.NewDataVirtualMemoryTracer(&m.proc)
 
-	tracers := []internal.Tracer{diskWriteTracer, diskReadTracer, memoryTracer, networkInTracer, networkOutTracer, residentMemoryTracer, dataVirtualMemoryTracer}
-	names := []string{"disk_write", "disk_read", "memory", "network_in", "network_out", "resident_memory", "data_memory"}
+	tracers := []internal.Tracer{diskWriteTracer, diskReadTracer, memoryTracer, socketTracer, residentMemoryTracer, dataVirtualMemoryTracer}
+	names := []string{"disk_write", "disk_read", "memory", "packets", "resident_memory", "data_memory"}
 
 	var tickers []*time.Ticker
 
