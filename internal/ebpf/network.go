@@ -71,10 +71,10 @@ func (tracer NetworkTracer) tickFrameSize() {
 	var nextKeyOut uint64
 	prevKey := new(uint64)
 	for {
-		_, err := tracer.getEbpfObjects().PacketFrameHolder.BatchLookupAndDelete(prevKey, &nextKeyOut, keysOut, valsOut, nil)
+		_, err := tracer.getEbpfObjects().Events.BatchLookupAndDelete(prevKey, &nextKeyOut, keysOut, valsOut, nil)
 		idx := uint64(0)
 		for keysOut[idx] != 0 && valsOut[idx].Sport != 0 {
-			nt := internal.NetworkTrace{Len: valsOut[idx].Len, Sport: valsOut[idx].Sport, Dport: valsOut[idx].Dport}
+			nt := internal.NetworkTrace{Len: valsOut[idx].Len, Sport: valsOut[idx].Sport, Dport: valsOut[idx].Dport, Direction: valsOut[idx].Direction}
 			// TODO: There is a bug here, some 0s for time has been seen.
 			tracer.traceChannel <- internal.Trace{TS: keysOut[idx], Data: nt}
 			idx++
