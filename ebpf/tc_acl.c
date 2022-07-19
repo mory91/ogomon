@@ -63,11 +63,11 @@ static __always_inline int check_port(__u64 *src_port, __u64 *dest_port, struct 
         ev->sport = bpf_ntohs(target_source);
         ev->dport = bpf_ntohs(target_dest);
 		if (*src_port == bpf_ntohs(target_source) || *dest_port == bpf_ntohs(target_dest)) {
-			ev->direction = EGRESS;
+			ev->direction = INGRESS;
 			return 1;
 		}
 		if (*dest_port == bpf_ntohs(target_source) || *src_port == bpf_ntohs(target_dest)) {
-			ev->direction = INGRESS;
+			ev->direction = EGRESS;
 			return 1;
 		}
 	}
