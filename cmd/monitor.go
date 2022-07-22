@@ -6,7 +6,9 @@ import (
 	"ogomon/internal/ebpf"
 	"ogomon/pkg"
 	"os"
+	"os/exec"
 	"os/signal"
+	"strconv"
 	"sync"
 	"syscall"
 	"time"
@@ -29,6 +31,7 @@ var (
 
 const (
 	STEP = 500
+	TICKER_TIME = time.Microsecond * STEP
 )
 
 func (m Monitor) Start() error {
@@ -48,12 +51,9 @@ func (m Monitor) Start() error {
 	}
 	diskReadTracer, err := internal.NewDiskReadTracer(&m.proc)
 	diskWriteTracer, err := internal.NewDiskWriteTracer(&m.proc)
-	memoryTracer, err := internal.NewMemoryTracer(&m.proc)
-	residentMemoryTracer, err := internal.NewResidentMemoryTracer(&m.proc)
-	dataVirtualMemoryTracer, err := internal.NewDataVirtualMemoryTracer(&m.proc)
 
-	tracers := []internal.Tracer{diskWriteTracer, diskReadTracer, memoryTracer, socketTracer, residentMemoryTracer, dataVirtualMemoryTracer}
-	names := []string{"disk_write", "disk_read", "memory", "packets", "resident_memory", "data_memory"}
+	tracers := []internal.Tracer{diskWriteTracer, diskReadTracer, socketTracer}
+	names := []string{"disk_write", "disk_read", "packets"}
 
 	var tickers []*time.Ticker
 
@@ -62,7 +62,7 @@ func (m Monitor) Start() error {
 		wg.Add(2)
 		tmpTracer := idx
 
-		ticker := time.NewTicker(time.Microsecond * STEP)
+		ticker := time.NewTicker(TICKER_TIME)
 		tickers = append(tickers, ticker)
 
 		go func() {
@@ -75,11 +75,30 @@ func (m Monitor) Start() error {
 		}()
 	}
 
+	// memory allocations section
+	command := exec.Command("sudo", "./mem.py", "-p", fmt.Sprintf("%d", stat.PID), "-s", strconv.FormatInt(TICKER_TIME.Nanoseconds(), 10))
+	go func (cmd *exec.Cmd)  {
+    	outfile, err := os.Create("./allocations")
+    	if err != nil {
+      		panic(err)
+    	}
+    	defer outfile.Close()
+    	cmd.Stdout = outfile
+    	err = cmd.Start(); if err != nil {
+        	panic(err)
+    	}
+    	cmd.Wait()
+	}(command)
+	// end memory allocation
+
 	if err != nil {
 		panic(err)
 	}
 
 	<-cancelSig
+
+	command.Process.Signal(syscall.SIGTERM)
+
 	for _, t := range tickers {
 		t.Stop()
 	}
