@@ -38,8 +38,8 @@ func NewNetworkTracer(srcPort, destPort int) (NetworkTracer, error) {
 func (tracer NetworkTracer) Start(ticker time.Ticker, stop chan bool) {
 	err := tracer.getEbpfObjects().PortHolder.Put(uint64(0), uint64(tracer.srcPort))
 	err = tracer.getEbpfObjects().PortHolder.Put(uint64(1), uint64(tracer.destPort))
-	keysOut = make([]uint64, 5000)
-	valsOut = make([]tcACLEvent, 5000)
+	keysOut = make([]uint64, 50000)
+	valsOut = make([]tcACLEvent, 50000)
 	if err != nil {
 		jww.INFO.Println(err)
 	}
