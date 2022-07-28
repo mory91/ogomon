@@ -30,7 +30,7 @@ var (
 )
 
 const (
-	STEP = 500
+	STEP        = 500
 	TICKER_TIME = time.Microsecond * STEP
 )
 
@@ -51,9 +51,12 @@ func (m Monitor) Start() error {
 	}
 	diskReadTracer, err := internal.NewDiskReadTracer(&m.proc)
 	diskWriteTracer, err := internal.NewDiskWriteTracer(&m.proc)
+	memoryTracer, err := internal.NewMemoryTracer(&m.proc)
+	residentMemoryTracer, err := internal.NewResidentMemoryTracer(&m.proc)
+	dataVirtualMemoryTracer, err := internal.NewDataVirtualMemoryTracer(&m.proc)
 
-	tracers := []internal.Tracer{diskWriteTracer, diskReadTracer, socketTracer}
-	names := []string{"disk_write", "disk_read", "packets"}
+	tracers := []internal.Tracer{diskWriteTracer, diskReadTracer, socketTracer, residentMemoryTracer, memoryTracer, dataVirtualMemoryTracer}
+	names := []string{"disk_write", "disk_read", "packets", "rss_memory", "memory", "data_memory"}
 
 	var tickers []*time.Ticker
 
@@ -77,17 +80,18 @@ func (m Monitor) Start() error {
 
 	// memory allocations section
 	command := exec.Command("sudo", "./mem.py", "-p", fmt.Sprintf("%d", stat.PID), "-s", strconv.FormatInt(TICKER_TIME.Nanoseconds(), 10))
-	go func (cmd *exec.Cmd)  {
-    	outfile, err := os.Create("./allocations")
-    	if err != nil {
-      		panic(err)
-    	}
-    	defer outfile.Close()
-    	cmd.Stdout = outfile
-    	err = cmd.Start(); if err != nil {
-        	panic(err)
-    	}
-    	cmd.Wait()
+	go func(cmd *exec.Cmd) {
+		outfile, err := os.Create("./allocations")
+		if err != nil {
+			panic(err)
+		}
+		defer outfile.Close()
+		cmd.Stdout = outfile
+		err = cmd.Start()
+		if err != nil {
+			panic(err)
+		}
+		cmd.Wait()
 	}(command)
 	// end memory allocation
 
