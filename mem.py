@@ -20,7 +20,7 @@ class Allocation(object):
 
 parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
 parser.add_argument("-p", "--pid", type=int, default=-1)
-parser.add_argument("-s", "--sample-rate", default=5000, type=int)
+parser.add_argument("-s", "--sample-rate", default=500_000, type=int)
 
 args = parser.parse_args()
 
