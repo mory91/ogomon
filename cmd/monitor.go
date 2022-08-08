@@ -54,9 +54,13 @@ func (m Monitor) Start() error {
 	memoryTracer, err := internal.NewMemoryTracer(&m.proc)
 	residentMemoryTracer, err := internal.NewResidentMemoryTracer(&m.proc)
 	dataVirtualMemoryTracer, err := internal.NewDataVirtualMemoryTracer(&m.proc)
+	CSTimeTrace, err := internal.NewCSTimeTracer(&m.proc)
+	CUTimeTrace, err := internal.NewCUTimeTracer(&m.proc)
+	STimeTracer, err := internal.NewSTimeTracer(&m.proc)
+	UTimeTracer, err := internal.NewUTimeTracer(&m.proc)
 
-	tracers := []internal.Tracer{diskWriteTracer, diskReadTracer, socketTracer, residentMemoryTracer, memoryTracer, dataVirtualMemoryTracer}
-	names := []string{"disk_write", "disk_read", "packets", "rss_memory", "memory", "data_memory"}
+	tracers := []internal.Tracer{diskWriteTracer, diskReadTracer, socketTracer, residentMemoryTracer, memoryTracer, dataVirtualMemoryTracer, CSTimeTrace, CUTimeTrace, STimeTracer, UTimeTracer}
+	names := []string{"disk_write", "disk_read", "packets", "rss_memory", "memory", "data_memory", "cs_time", "cu_time", "s_time", "u_time"}
 
 	var tickers []*time.Ticker
 

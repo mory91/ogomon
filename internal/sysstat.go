@@ -34,6 +34,22 @@ func NewDataVirtualMemoryTracer(proc *procfs.Proc) (SystemTracer, error) {
 	return SystemTracer{proc: proc, traceChannel: make(chan Trace, 5000), ticker: tickDataVirtualMemory}, nil
 }
 
+func NewSTimeTracer(proc *procfs.Proc) (SystemTracer, error) {
+	return SystemTracer{proc: proc, traceChannel: make(chan Trace, 5000), ticker: tickSTime}, nil
+}
+
+func NewUTimeTracer(proc *procfs.Proc) (SystemTracer, error) {
+	return SystemTracer{proc: proc, traceChannel: make(chan Trace, 5000), ticker: tickUTime}, nil
+}
+
+func NewCSTimeTracer(proc *procfs.Proc) (SystemTracer, error) {
+	return SystemTracer{proc: proc, traceChannel: make(chan Trace, 5000), ticker: tickCSTime}, nil
+}
+
+func NewCUTimeTracer(proc *procfs.Proc) (SystemTracer, error) {
+	return SystemTracer{proc: proc, traceChannel: make(chan Trace, 5000), ticker: tickCUTime}, nil
+}
+
 func tickDiskRead(t time.Time, tracer *SystemTracer) {
 	stat, _ := tracer.proc.IO()
 	readBytes := stat.ReadBytes
@@ -60,8 +76,32 @@ func tickResidentMemory(t time.Time, tracer *SystemTracer) {
 
 func tickDataVirtualMemory(t time.Time, tracer *SystemTracer) {
 	status, _ := tracer.proc.NewStatus()
-	allocatedVmData := status.VmData
+	allocatedVmData := uint64(status.VmData)
 	tracer.traceChannel <- Trace{TS: GetEventTime(t), Data: allocatedVmData}
+}
+
+func tickCSTime(t time.Time, tracer *SystemTracer) {
+	stat, _ := tracer.proc.Stat()
+	recordedCSTime := uint64(stat.CSTime)
+	tracer.traceChannel <- Trace{TS: GetEventTime(t), Data: recordedCSTime}
+}
+
+func tickCUTime(t time.Time, tracer *SystemTracer) {
+	stat, _ := tracer.proc.Stat()
+	recordedCUTime := uint64(stat.CUTime)
+	tracer.traceChannel <- Trace{TS: GetEventTime(t), Data: recordedCUTime}
+}
+
+func tickSTime(t time.Time, tracer *SystemTracer) {
+	stat, _ := tracer.proc.Stat()
+	recordedSTime := uint64(stat.STime)
+	tracer.traceChannel <- Trace{TS: GetEventTime(t), Data: recordedSTime}
+}
+
+func tickUTime(t time.Time, tracer *SystemTracer) {
+	stat, _ := tracer.proc.Stat()
+	recordedUTime := uint64(stat.UTime)
+	tracer.traceChannel <- Trace{TS: GetEventTime(t), Data: recordedUTime}
 }
 
 func (systemTracer SystemTracer) Start(ticker time.Ticker, stop chan bool) {
