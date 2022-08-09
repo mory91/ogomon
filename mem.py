@@ -38,39 +38,15 @@ struct event {
 
 BPF_ARRAY(sizes, u64, 1);
 BPF_ARRAY(times, u64, 1);
-BPF_RINGBUF_OUTPUT(events, 1 << 12);
+BPF_RINGBUF_OUTPUT(events, 4096 * 8);
 
 static inline int gen_alloc_enter(struct pt_regs *ctx, size_t size) {
-        int key = 0;
-        u64 zero = 0;
-        u64* prev_ts = times.lookup(&key);
-        u64 ts = bpf_ktime_get_ns();
-
-        if (!prev_ts) {
-            times.update(&key, &zero);
-            return 0;
-        }
-
-        if (ts - *prev_ts < SAMPLE_EVERY_N) {
-            sizes.atomic_increment(key, size);
-            return 0;
-        } else {
-            u64* f_size = sizes.lookup(&key);
-
-            if (!f_size) {
-                sizes.update(&key, &zero);
-                return 0;
-            }
-
-            struct event event = {};
-            event.size = *f_size;
-            event.timestamp_ns = *prev_ts;
-
-            events.ringbuf_output(&event, sizeof(event), 0);
-            times.update(&key, &ts);
-            sizes.update(&key, &zero);
-        }
-        return 0;
+    u64 ts = bpf_ktime_get_ns();
+    struct event event = {};
+    event.size = size;
+    event.timestamp_ns = ts;
+    events.ringbuf_output(&event, sizeof(event), 0);
+    return 0;
 }
 
 int malloc_enter(struct pt_regs *ctx, size_t size) {
@@ -150,8 +126,7 @@ attach_probes("aligned_alloc", can_fail=True)  # added in C11
 
 while True:
     try:
-        bpf.ring_buffer_poll()
-        sleep(0.1)
+        bpf.ring_buffer_consume()
     except KeyboardInterrupt:
         exit()
     sys.stdout.flush()
