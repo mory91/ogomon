@@ -20,7 +20,7 @@ class Allocation(object):
 
 parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
 parser.add_argument("-p", "--pid", type=int, default=-1)
-parser.add_argument("-s", "--sample-rate", default=500_000, type=int)
+parser.add_argument("-s", "--sample-rate", default=5000, type=int)
 
 args = parser.parse_args()
 
@@ -43,33 +43,32 @@ BPF_RINGBUF_OUTPUT(events, 1 << 12);
 static inline int gen_alloc_enter(struct pt_regs *ctx, size_t size) {
         int key = 0;
         u64 zero = 0;
+        u64 this_size = size;
         u64* prev_ts = times.lookup(&key);
         u64 ts = bpf_ktime_get_ns();
+
+        u64* f_size = sizes.lookup(&key);
+        if (!f_size) {
+            sizes.update(&key, &this_size);
+            return 0;
+        } else {
+            sizes.atomic_increment(key, this_size);
+        }
 
         if (!prev_ts) {
             times.update(&key, &zero);
             return 0;
         }
 
-        if (ts - *prev_ts < SAMPLE_EVERY_N) {
-            sizes.atomic_increment(key, size);
-            return 0;
-        } else {
-            u64* f_size = sizes.lookup(&key);
-
-            if (!f_size) {
-                sizes.update(&key, &zero);
-                return 0;
-            }
-
+        if (ts - *prev_ts >= SAMPLE_EVERY_N) {
             struct event event = {};
-            event.size = *f_size;
+            event.size = *f_size + this_size;
             event.timestamp_ns = *prev_ts;
-
             events.ringbuf_output(&event, sizeof(event), 0);
             times.update(&key, &ts);
             sizes.update(&key, &zero);
         }
+
         return 0;
 }
 
