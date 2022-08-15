@@ -82,6 +82,8 @@ func (m Monitor) Start() error {
 		}()
 	}
 
+	go ebpf.RunKprobe()
+
 	// memory allocations section
 	command := exec.Command("sudo", "./mem.py", "-p", fmt.Sprintf("%d", stat.PID), "-s", strconv.FormatInt(TICKER_TIME.Nanoseconds(), 10))
 	go func(cmd *exec.Cmd) {
