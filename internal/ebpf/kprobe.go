@@ -34,7 +34,7 @@ func RunKprobe() {
 	// pre-compiled program. Each time the kernel function enters, the program
 	// will increment the execution counter by 1. The read loop below polls this
 	// map value once per second.
-	kp, err := link.Kprobe(fn, objs.KprobeSend)
+	kp, err := link.Kprobe(fn, objs.KprobeSendmsg)
 	if err != nil {
 		log.Fatalf("opening kprobe: %s", err)
 	}

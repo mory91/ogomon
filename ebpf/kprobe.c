@@ -1,6 +1,7 @@
 // +build ignore
 
 #include <linux/types.h>
+#include <linux/socket.h>
 #include <linux/byteorder.h>
 
 #include <stddef.h>
@@ -30,7 +31,7 @@ struct bpf_map_def SEC("maps") kprobe_map = {
 };
 
 SEC("kprobe/sys_sendmsg")
-int kprobe_send(struct pt_regs *ctx) {
+int kprobe_sendmsg(struct pt_regs *ctx, int sockfd, struct msghdr *msg, int flags) {
 	__u32 key     = 0;
 	__u64 initval = 1, *valp;
 
@@ -40,6 +41,9 @@ int kprobe_send(struct pt_regs *ctx) {
 		return 0;
 	}
 	__sync_fetch_and_add(valp, 1);
+
+	char msg2[] = "len: %d;\n";
+    bpf_trace_printk(msg2, sizeof(msg2), msg->msg_iovlen);
 
 	return 0;
 }
