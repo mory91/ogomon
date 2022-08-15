@@ -29,7 +29,7 @@ struct bpf_map_def SEC("maps") kprobe_map = {
 	.max_entries = 1,
 };
 
-SEC("kprobe/sys_sendto")
+SEC("kprobe/sys_sendmsg")
 int kprobe_send(struct pt_regs *ctx) {
 	__u32 key     = 0;
 	__u64 initval = 1, *valp;
