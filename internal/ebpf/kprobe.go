@@ -16,7 +16,7 @@ const mapKey uint32 = 0
 func RunKprobe() {
 
 	// Name of the kernel function to trace.
-	fn := "sys_send"
+	fn := "sys_sendto"
 
 	// Allow the current process to lock memory for eBPF resources.
 	if err := rlimit.RemoveMemlock(); err != nil {
