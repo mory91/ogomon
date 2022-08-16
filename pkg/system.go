@@ -48,7 +48,11 @@ func CreateProcessAndPipeToFile(cmd *exec.Cmd, filename string) {
 	}
 	defer outfile.Close()
 	cmd.Stdout = outfile
+	var errbuf strings.Builder
+	cmd.Stderr = &errbuf
 	err = cmd.Start()
+	stderr := errbuf.String()
+	fmt.Println(stderr)
 	if err != nil {
 		panic(err)
 	}
