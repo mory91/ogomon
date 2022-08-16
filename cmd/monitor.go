@@ -82,24 +82,12 @@ func (m Monitor) Start() error {
 		}()
 	}
 
-	go ebpf.RunKprobe()
-
-	// memory allocations section
-	command := exec.Command("sudo", "./mem.py", "-p", fmt.Sprintf("%d", stat.PID), "-s", strconv.FormatInt(TICKER_TIME.Nanoseconds(), 10))
-	go func(cmd *exec.Cmd) {
-		outfile, err := os.Create("./allocations")
-		if err != nil {
-			panic(err)
-		}
-		defer outfile.Close()
-		cmd.Stdout = outfile
-		err = cmd.Start()
-		if err != nil {
-			panic(err)
-		}
-		cmd.Wait()
-	}(command)
-	// end memory allocation
+	// external commands section
+	memCommand := exec.Command("sudo", "./mem.py", "-p", fmt.Sprintf("%d", stat.PID), "-s", strconv.FormatInt(TICKER_TIME.Nanoseconds(), 10))
+	sendCommand := exec.Command("sudo", "./send.py", "-p", fmt.Sprintf("%d", stat.PID))
+	pkg.CreateProcessAndPipeToFile(memCommand, "./allocations")
+	pkg.CreateProcessAndPipeToFile(sendCommand, "./sends")
+	// external commands section
 
 	if err != nil {
 		panic(err)
@@ -107,7 +95,8 @@ func (m Monitor) Start() error {
 
 	<-cancelSig
 
-	command.Process.Signal(syscall.SIGTERM)
+	memCommand.Process.Signal(syscall.SIGTERM)
+	sendCommand.Process.Signal(syscall.SIGTERM)
 
 	for _, t := range tickers {
 		t.Stop()

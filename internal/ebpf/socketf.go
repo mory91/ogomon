@@ -1,6 +1,5 @@
 package ebpf
 
-import "C"
 import (
 	"golang.org/x/sys/unix"
 	"net"
