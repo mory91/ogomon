@@ -13,7 +13,8 @@ bpf_text = """
 #include <bcc/proto.h>
 
 struct event {
-        u64 size;
+        int pad;
+        int size;
         u64 timestamp_ns;
 };
 BPF_RINGBUF_OUTPUT(events, 1 << 12);
@@ -22,7 +23,7 @@ int kretprobe__sys_sendmsg(struct pt_regs *ctx)
 {
     u64 id = bpf_get_current_pid_tgid();
     if (id >> 32 != __PID__) { return 0; }
-    u64 size = PT_REGS_RC(ctx);
+    int size = PT_REGS_RC(ctx);
     u64 time = bpf_ktime_get_ns();
     struct event event = {
         .size = size,
