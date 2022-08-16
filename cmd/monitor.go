@@ -85,8 +85,8 @@ func (m Monitor) Start() error {
 	// external commands section
 	memCommand := exec.Command("sudo", "./mem.py", "-p", fmt.Sprintf("%d", stat.PID), "-s", strconv.FormatInt(TICKER_TIME.Nanoseconds(), 10))
 	sendCommand := exec.Command("sudo", "./send.py", "-p", fmt.Sprintf("%d", stat.PID))
-	pkg.CreateProcessAndPipeToFile(memCommand, "./allocations")
-	pkg.CreateProcessAndPipeToFile(sendCommand, "./sends")
+	go pkg.CreateProcessAndPipeToFile(memCommand, "./allocations")
+	go pkg.CreateProcessAndPipeToFile(sendCommand, "./sends")
 	// external commands section
 
 	if err != nil {
