@@ -149,8 +149,7 @@ attach_probes("aligned_alloc", can_fail=True)  # added in C11
 
 while True:
     try:
-        bpf.ring_buffer_poll()
-        sleep(0.1)
+        bpf.ring_buffer_consume()
     except KeyboardInterrupt:
         exit()
     sys.stdout.flush()

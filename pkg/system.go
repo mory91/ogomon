@@ -2,11 +2,14 @@ package pkg
 
 import (
 	"encoding/binary"
+	"os"
 	"fmt"
-	procfs "github.com/prometheus/procfs"
-	"golang.org/x/sys/unix"
+	"os/exec"
 	"strings"
 	"unsafe"
+
+	procfs "github.com/prometheus/procfs"
+	"golang.org/x/sys/unix"
 )
 
 func GetTargetProc(name string) (procfs.Proc, error) {
@@ -36,4 +39,20 @@ func Htons(i uint16) uint16 {
 	b := make([]byte, 2)
 	binary.BigEndian.PutUint16(b, i)
 	return *(*uint16)(unsafe.Pointer(&b[0]))
+}
+
+func CreateProcessAndPipeToFile(cmd *exec.Cmd, filename string) {
+	outfile, err := os.Create(filename)
+	if err != nil {
+		panic(err)
+	}
+	defer outfile.Close()
+	cmd.Stdout = outfile
+	var errbuf strings.Builder
+	cmd.Stderr = &errbuf
+	err = cmd.Start()
+	if err != nil {
+		panic(err)
+	}
+	cmd.Wait()
 }
