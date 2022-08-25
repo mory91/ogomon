@@ -113,7 +113,11 @@ var monitorCmd = &cobra.Command{
 	Short: "memory and disk",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		jww.INFO.Println("Monitor Starting")
-		proc, _ := pkg.GetTargetProc(executableName)
+		proc, err := pkg.GetTargetProc(executableName)
+		if err != nil {
+			jww.ERROR.Println(err)
+			os.Exit(1)
+		}
 		m := Monitor{proc: proc}
 		if err := m.Start(); err != nil {
 			return err

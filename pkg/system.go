@@ -2,8 +2,9 @@ package pkg
 
 import (
 	"encoding/binary"
-	"os"
 	"fmt"
+	jww "github.com/spf13/jwalterweatherman"
+	"os"
 	"os/exec"
 	"strings"
 	"unsafe"
@@ -14,16 +15,22 @@ import (
 
 func GetTargetProc(name string) (procfs.Proc, error) {
 	procs, err := procfs.AllProcs()
+	maxPID := -1
+	var targetProc procfs.Proc
 	if err != nil {
 		return procfs.Proc{}, err
 	}
 	for _, p := range procs {
 		comm, _ := p.Comm()
-		if strings.Index(comm, name) >= 0 {
-			return p, nil
+		if strings.Index(comm, name) >= 0 && p.PID > maxPID {
+			maxPID = p.PID
+			targetProc = p
 		}
 	}
-	return procfs.Proc{}, fmt.Errorf("not found")
+	if maxPID == -1 {
+		return targetProc, fmt.Errorf("NOT FOUND")
+	}
+	return targetProc, nil
 }
 
 func OpenMemLock() {
@@ -31,7 +38,7 @@ func OpenMemLock() {
 		Cur: unix.RLIM_INFINITY,
 		Max: unix.RLIM_INFINITY,
 	}); err != nil {
-		fmt.Println("WARNING: Failed to adjust rlimit: ", err)
+		jww.WARN.Println("Failed to adjust rlimit: ", err)
 	}
 }
 

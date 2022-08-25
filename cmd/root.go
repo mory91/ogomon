@@ -15,6 +15,10 @@ var rootCmd = &cobra.Command{
 
 func Execute() {
 	rootCmd.PersistentFlags().StringVarP(&executableName, "executable", "e", "", "Name to trace")
+	if err := rootCmd.MarkPersistentFlagRequired("executable"); err != nil {
+		jww.ERROR.Println(err)
+		os.Exit(1)
+	}
 	if err := rootCmd.Execute(); err != nil {
 		jww.ERROR.Println(err)
 		os.Exit(1)
