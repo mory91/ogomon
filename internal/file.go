@@ -23,11 +23,7 @@ func LogTrace(ch chan Trace, filename string) {
 			nt := trace.Data.(NetworkTrace)
 			sport, dport, length, dir := nt.Sport, nt.Dport, nt.Len, nt.Direction
 			data = fmt.Sprintf(
-				"%s\t%s\t%s\t%s\t",
-				strconv.FormatUint(uint64(length), 10),
-				strconv.FormatUint(uint64(sport), 10),
-				strconv.FormatUint(uint64(dport), 10),
-				strconv.FormatUint(uint64(dir), 10),
+				"%d\t%d\t%d\t%d\t", length, sport, dport, dir,
 			)
 		}
 		_, err := f.WriteString(fmt.Sprintf("%s\t%s\n", strconv.FormatUint(trace.TS, 10), data))
