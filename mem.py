@@ -1,12 +1,9 @@
 #!/usr/bin/env python
 
 from bcc import BPF
-from time import sleep
-from datetime import datetime
 import argparse
-import subprocess
-import os
 import sys
+
 
 class Allocation(object):
     def __init__(self, stack, size):
@@ -17,6 +14,7 @@ class Allocation(object):
     def update(self, size):
         self.count += 1
         self.size += size
+
 
 parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
 parser.add_argument("-p", "--pid", type=int, default=-1)
@@ -118,34 +116,36 @@ bpf_source = bpf_source.replace("STACK_FLAGS", stack_flags)
 
 bpf = BPF(text=bpf_source)
 
+
 def callback(ctx, data, size):
     event = bpf['events'].event(data)
     print("%d\t%d" % (event.timestamp_ns, event.size))
 
+
 bpf['events'].open_ring_buffer(callback)
+
 
 def attach_probes(sym, fn_prefix=None, can_fail=False):
     if fn_prefix is None:
-            fn_prefix = sym
+        fn_prefix = sym
     try:
-            bpf.attach_uprobe(name="c", sym=sym,
-                              fn_name=fn_prefix + "_enter",
-                              pid=pid)
+        bpf.attach_uprobe(name="c", sym=sym, fn_name=fn_prefix + "_enter", pid=pid)
     except Exception:
-            if can_fail:
-                    return
-            else:
-                    raise
+        if can_fail:
+            return
+        else:
+            raise
+
 
 attach_probes("malloc")
 attach_probes("calloc")
 attach_probes("realloc")
-attach_probes("mmap")
 attach_probes("posix_memalign")
-attach_probes("valloc", can_fail=True) # failed on Android, is deprecated in libc.so from bionic directory
+attach_probes("valloc", can_fail=True)  # failed on Android, is deprecated in libc.so from bionic directory
 attach_probes("memalign")
-attach_probes("pvalloc", can_fail=True) # failed on Android, is deprecated in libc.so from bionic directory
+attach_probes("pvalloc", can_fail=True)  # failed on Android, is deprecated in libc.so from bionic directory
 attach_probes("aligned_alloc", can_fail=True)  # added in C11
+attach_probes("mmap")
 
 while True:
     try:

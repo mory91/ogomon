@@ -2,9 +2,10 @@ package internal
 
 import (
 	"fmt"
-	jww "github.com/spf13/jwalterweatherman"
 	"os"
 	"strconv"
+
+	jww "github.com/spf13/jwalterweatherman"
 )
 
 func LogTrace(ch chan Trace, filename string) {
@@ -23,12 +24,14 @@ func LogTrace(ch chan Trace, filename string) {
 			nt := trace.Data.(NetworkTrace)
 			sport, dport, length, dir := nt.Sport, nt.Dport, nt.Len, nt.Direction
 			data = fmt.Sprintf(
-				"%d\t%d\t%d\t%d\t", length, sport, dport, dir,
+				"%d,%d,%d,%d", length, sport, dport, dir,
 			)
 		}
-		_, err := f.WriteString(fmt.Sprintf("%s\t%s\n", strconv.FormatUint(trace.TS, 10), data))
+		_, err := f.WriteString(fmt.Sprintf("%s,%s\n", strconv.FormatUint(trace.TS, 10), data))
 		if err != nil {
 			jww.ERROR.Println(err)
 		}
 	}
+	jww.INFO.Println("Syncing file: ", filename)
+	f.Sync()
 }
