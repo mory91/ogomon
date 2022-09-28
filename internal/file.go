@@ -22,9 +22,9 @@ func LogTrace(ch chan Trace, filename string) {
 			data = strconv.FormatUint(trace.Data.(uint64), 10)
 		case NetworkTrace:
 			nt := trace.Data.(NetworkTrace)
-			sport, dport, length, dir := nt.Sport, nt.Dport, nt.Len, nt.Direction
+			sport, dport, length, dir, saddr, daddr := nt.Sport, nt.Dport, nt.Len, nt.Direction, nt.Saddr, nt.Daddr
 			data = fmt.Sprintf(
-				"%d,%d,%d,%d", length, sport, dport, dir,
+				"%d,%d,%d,%d,%d,%d", length, saddr, daddr, sport, dport, dir,
 			)
 		}
 		_, err := f.WriteString(fmt.Sprintf("%s,%s\n", strconv.FormatUint(trace.TS, 10), data))

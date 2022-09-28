@@ -23,11 +23,21 @@
 #define INGRESS 1
 #define EGRESS 2
 
-static __always_inline int parse_tcphdr(struct tcphdr *tcphdr_l4, struct __sk_buff *skb)
+#define NIPQUAD(addr) \
+    ((unsigned char *)&addr)[0], \
+    ((unsigned char *)&addr)[1], \
+    ((unsigned char *)&addr)[2], \
+    ((unsigned char *)&addr)[3]
+
+static __always_inline int parse_tcphdr(struct iphdr *iphdr_l3, struct tcphdr *tcphdr_l4, struct __sk_buff *skb)
 {
+
 	if (bpf_skb_load_bytes(skb, sizeof(struct ethhdr) + sizeof(struct iphdr), tcphdr_l4, sizeof(struct tcphdr)) < 0) {
 		return -1;
 	}
+	if (bpf_skb_load_bytes(skb, sizeof(struct ethhdr), iphdr_l3, sizeof(struct iphdr)) < 0) {
+        return -1;
+    }
 	return 1;
 }
 
@@ -36,6 +46,8 @@ struct event {
     __u64 dport;
     __u64 len;
 	__u64 direction;
+	__u64 saddr;
+	__u64 daddr;
 };
 struct event *unused __attribute__((unused));
 
@@ -53,20 +65,26 @@ struct bpf_map_def SEC("maps") port_holder = {
 	.max_entries = 2,
 };
 
-static __always_inline int check_port(__u64 *src_port, __u64 *dest_port, struct tcphdr *tcphdr_l4, struct udphdr *udphdr_l4, struct event* ev)
+static __always_inline int check_ip(__u64 *src_ip, __u64 *dest_ip, struct tcphdr *tcphdr_l4, struct iphdr *iphdr_l3, struct event* ev)
 {
 	__u64 target_source = 0, target_dest = 0;
 	target_source = tcphdr_l4->source;
 	target_dest = tcphdr_l4->dest;
-	if (src_port && dest_port)
+    __u64 saddr = ((unsigned char*)(&(iphdr_l3->saddr)))[3];
+    __u64 daddr = ((unsigned char*)(&(iphdr_l3->daddr)))[3];
+    char msg1[] = "%d\n";
+    bpf_trace_printk(msg1, sizeof(msg1), saddr);
+	if (src_ip && dest_ip)
 	{
         ev->sport = bpf_ntohs(target_source);
         ev->dport = bpf_ntohs(target_dest);
-		if (*src_port == bpf_ntohs(target_source) || *dest_port == bpf_ntohs(target_dest)) {
+        ev->saddr = saddr;
+        ev->daddr = daddr;
+		if (*src_ip == daddr && *dest_ip == saddr) {
 			ev->direction = INGRESS;
 			return 1;
 		}
-		if (*dest_port == bpf_ntohs(target_source) || *src_port == bpf_ntohs(target_dest)) {
+		if (*src_ip == saddr && *dest_ip == daddr) {
 			ev->direction = EGRESS;
 			return 1;
 		}
@@ -79,20 +97,20 @@ int report_packet_size(struct __sk_buff *skb)
 {
     __u64 src_key = 0;
     __u64 dest_key = 1;
-    __u64 *src_port = bpf_map_lookup_elem(&port_holder, &src_key);
-    __u64 *dest_port = bpf_map_lookup_elem(&port_holder, &dest_key);
+    __u64 *src_ip = bpf_map_lookup_elem(&port_holder, &src_key);
+    __u64 *dest_ip = bpf_map_lookup_elem(&port_holder, &dest_key);
 
 	__u64 val = skb->len;
 	__u64 key = bpf_ktime_get_ns();
 	
     int proto_type;
+   	struct iphdr iphdr_l3;
    	struct tcphdr tcphdr_l4;
-   	struct udphdr udphdr_l4;
 	struct event ev = {.len = val};
 	
 	// NO UDP SUPPORT FOR NOW
-	if (parse_tcphdr(&tcphdr_l4, skb)) {
-		if (check_port(src_port, dest_port, &tcphdr_l4, &udphdr_l4, &ev) > 0) {
+	if (parse_tcphdr(&iphdr_l3, &tcphdr_l4, skb)) {
+		if (check_ip(src_ip, dest_ip, &tcphdr_l4, &iphdr_l3, &ev) > 0) {
 			bpf_map_update_elem(&events, &key, &ev, BPF_ANY);
 		}
 	}

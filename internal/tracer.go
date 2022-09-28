@@ -11,8 +11,10 @@ type Trace struct {
 	TS   uint64
 }
 type NetworkTrace struct {
-	Len   uint64
-	Sport uint64
-	Dport uint64
+	Len       uint64
+	Sport     uint64
+	Dport     uint64
+	Saddr     uint64
+	Daddr     uint64
 	Direction uint64
 }
