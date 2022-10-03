@@ -65,31 +65,18 @@ struct bpf_map_def SEC("maps") port_holder = {
 	.max_entries = 2,
 };
 
-static __always_inline int check_ip(__u64 *src_ip, __u64 *dest_ip, struct tcphdr *tcphdr_l4, struct iphdr *iphdr_l3, struct event* ev)
+static __always_inline int create_ev(struct tcphdr *tcphdr_l4, struct iphdr *iphdr_l3, struct event* ev)
 {
 	__u64 target_source = 0, target_dest = 0;
 	target_source = tcphdr_l4->source;
 	target_dest = tcphdr_l4->dest;
     __u64 saddr = ((unsigned char*)(&(iphdr_l3->saddr)))[3];
     __u64 daddr = ((unsigned char*)(&(iphdr_l3->daddr)))[3];
-    char msg1[] = "%d\n";
-    bpf_trace_printk(msg1, sizeof(msg1), saddr);
-	if (src_ip && dest_ip)
-	{
-        ev->sport = bpf_ntohs(target_source);
-        ev->dport = bpf_ntohs(target_dest);
-        ev->saddr = saddr;
-        ev->daddr = daddr;
-		if (*src_ip == daddr && *dest_ip == saddr) {
-			ev->direction = INGRESS;
-			return 1;
-		}
-		if (*src_ip == saddr && *dest_ip == daddr) {
-			ev->direction = EGRESS;
-			return 1;
-		}
-	}
-	return -1;
+    ev->sport = bpf_ntohs(target_source);
+    ev->dport = bpf_ntohs(target_dest);
+    ev->saddr = saddr;
+    ev->daddr = daddr;
+	return 1;
 }
 
 SEC("socket")
@@ -110,7 +97,7 @@ int report_packet_size(struct __sk_buff *skb)
 	
 	// NO UDP SUPPORT FOR NOW
 	if (parse_tcphdr(&iphdr_l3, &tcphdr_l4, skb)) {
-		if (check_ip(src_ip, dest_ip, &tcphdr_l4, &iphdr_l3, &ev) > 0) {
+		if (create_ev(&tcphdr_l4, &iphdr_l3, &ev) > 0) {
 			bpf_map_update_elem(&events, &key, &ev, BPF_ANY);
 		}
 	}
