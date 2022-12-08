@@ -15,6 +15,7 @@ func LogTrace(ch chan Trace, filename string) {
 		return
 	}
 	defer f.Close()
+	c := 0
 	for trace := range ch {
 		var data string
 		switch trace.Data.(type) {
@@ -28,6 +29,11 @@ func LogTrace(ch chan Trace, filename string) {
 			)
 		}
 		_, err := f.WriteString(fmt.Sprintf("%s,%s\n", strconv.FormatUint(trace.TS, 10), data))
+		if c%10 == 0 {
+			f.Sync()
+			c = 0
+		}
+		c += 1
 		if err != nil {
 			jww.ERROR.Println(err)
 		}
