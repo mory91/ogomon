@@ -1,16 +1,24 @@
 #!/usr/bin/env python
-import argparse
 import sys
+import argparse
 from bcc import BPF
+from bcc.utils import printb
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-p", "--pid", default=None)
 args = parser.parse_args()
 
+# define BPF program
 bpf_text = """
 #include <uapi/linux/ptrace.h>
-#include <net/sock.h>
-#include <bcc/proto.h>
+#include <linux/mm.h>
+#include <linux/kasan.h>
+
+#ifdef CONFIG_SLUB
+#include <linux/slub_def.h>
+#else
+#include <linux/slab_def.h>
+#endif
 
 struct event {
         int pad;
@@ -19,17 +27,18 @@ struct event {
 };
 BPF_RINGBUF_OUTPUT(events, 1 << 12);
 
-int kretprobe__sys_sendmsg(struct pt_regs *ctx)
+int kprobe__kmem_cache_alloc(struct pt_regs *ctx, struct kmem_cache *cachep)
 {
     u64 id = bpf_get_current_pid_tgid();
     if (id >> 32 != __PID__) { return 0; }
-    int size = PT_REGS_RC(ctx);
+    int size = cachep->size;
     u64 time = bpf_ktime_get_ns();
     struct event event = {
         .size = size,
         .timestamp_ns = time
     };
     events.ringbuf_output(&event, sizeof(event), 0);
+
     return 0;
 }
 """
@@ -39,6 +48,10 @@ if args.pid is None:
     exit(0)
 
 bpf_text = bpf_text.replace("__PID__", args.pid)
+
+# initialize BPF
+b = BPF(text=bpf_text)
+
 
 bpf = BPF(text=bpf_text)
 
