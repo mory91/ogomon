@@ -19,7 +19,7 @@ struct event {
 };
 BPF_RINGBUF_OUTPUT(events, 1 << 12);
 
-int kretprobe__sys_sendmsg(struct pt_regs *ctx)
+int kretprobe__tcp_sendmsg(struct pt_regs *ctx)
 {
     u64 id = bpf_get_current_pid_tgid();
     if (id >> 32 != __PID__) { return 0; }

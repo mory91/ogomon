@@ -11,8 +11,8 @@ var (
 )
 
 func init() {
-	userLandBaseTime = uint64(time.Now().UnixNano())
 	kernelLandBaseTime = pkg.GetMonoTime()
+	userLandBaseTime = uint64(time.Now().UnixNano())
 }
 
 func GetEventTime(t time.Time) uint64 {
