@@ -15,22 +15,19 @@ import (
 
 func GetTargetProc(name string) (procfs.Proc, error) {
 	procs, err := procfs.AllProcs()
-	maxPID := -1
 	var targetProc procfs.Proc
 	if err != nil {
 		return procfs.Proc{}, err
 	}
 	for _, p := range procs {
-		comm, _ := p.Comm()
-		if strings.Index(comm, name) >= 0 && p.PID > maxPID {
-			maxPID = p.PID
-			targetProc = p
+		cmdParts, _ := p.CmdLine()
+		for _, cmdPart := range cmdParts {
+			if strings.Index(cmdPart, name) >= 0  {
+				return p, nil
+			}
 		}
 	}
-	if maxPID == -1 {
-		return targetProc, fmt.Errorf("NOT FOUND")
-	}
-	return targetProc, nil
+	return targetProc, fmt.Errorf("NOT FOUND")
 }
 
 func OpenMemLock() {

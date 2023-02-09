@@ -142,4 +142,13 @@ fabric.properties
 # Ignore code-workspaces
 *.code-workspace
 
+# For trace files
+records/*
+backup/*
+build/*
+
+# Generated files
+internal/ebpf/tcacl*
+internal/ebpf/bpf*
+
 # End of https://www.toptal.com/developers/gitignore/api/go,visualstudiocode,jetbrains+all

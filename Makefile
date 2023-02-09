@@ -1,4 +1,4 @@
 build:
 	go generate ./...
-	go build -o ogomon main.go
+	go build -o build/ogomon main.go
 

@@ -78,17 +78,19 @@ func (m Monitor) Start() error {
 		}()
 		go func() {
 			defer wg.Done()
-			internal.LogTrace(tracers[tmpTracer].Chan(), fmt.Sprintf("%s", names[tmpTracer]))
+			internal.LogTrace(tracers[tmpTracer].Chan(), fmt.Sprintf("records/%s", names[tmpTracer]))
 		}()
 	}
 
 	// external commands section
-	memCommand := exec.Command("sudo", "./mem.py", "-p", fmt.Sprintf("%d", stat.PID), "-s", strconv.FormatInt(TICKER_TIME.Nanoseconds(), 10))
-	sendCommand := exec.Command("sudo", "./send.py", "-p", fmt.Sprintf("%d", stat.PID))
-	kcacheCommand := exec.Command("sudo", "./kcache.py", "-p", fmt.Sprintf("%d", stat.PID))
-	go pkg.CreateProcessAndPipeToFile(memCommand, "./allocations")
-	go pkg.CreateProcessAndPipeToFile(sendCommand, "./sends")
-	go pkg.CreateProcessAndPipeToFile(kcacheCommand, "./kcache")
+	cpuMemCommand := exec.Command("sudo", "./python/cpu_mem.py", "-p", fmt.Sprintf("%d", stat.PID), "-s", strconv.FormatInt(TICKER_TIME.Nanoseconds(), 10))
+	cudaMemCommand := exec.Command("sudo", "./python/cuda_mem.py", "-p", fmt.Sprintf("%d", stat.PID), "-s", strconv.FormatInt(TICKER_TIME.Nanoseconds(), 10))
+	sendCommand := exec.Command("sudo", "./python/send.py", "-p", fmt.Sprintf("%d", stat.PID))
+	kcacheCommand := exec.Command("sudo", "./python/kcache.py", "-p", fmt.Sprintf("%d", stat.PID))
+	go pkg.CreateProcessAndPipeToFile(cpuMemCommand, "./records/cpu_allocations")
+	go pkg.CreateProcessAndPipeToFile(cudaMemCommand, "./records/cuda_allocations")
+	go pkg.CreateProcessAndPipeToFile(sendCommand, "./records/sends")
+	go pkg.CreateProcessAndPipeToFile(kcacheCommand, "./records/kcache")
 	// external commands section
 
 	if err != nil {
@@ -97,8 +99,9 @@ func (m Monitor) Start() error {
 
 	<-cancelSig
 
-	memCommand.Process.Signal(syscall.SIGTERM)
+	cpuMemCommand.Process.Signal(syscall.SIGTERM)
 	sendCommand.Process.Signal(syscall.SIGTERM)
+	cudaMemCommand.Process.Signal(syscall.SIGTERM)
 
 	for _, t := range tickers {
 		t.Stop()

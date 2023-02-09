@@ -42,15 +42,18 @@ bpf_text = bpf_text.replace("__PID__", args.pid)
 
 bpf = BPF(text=bpf_text)
 
+
 def callback(ctx, data, size):
     event = bpf['events'].event(data)
     print("%d\t%d" % (event.timestamp_ns, event.size))
 
+
 bpf['events'].open_ring_buffer(callback)
+
 
 while True:
     try:
-       bpf.ring_buffer_consume()
+        bpf.ring_buffer_consume()
     except KeyboardInterrupt:
         exit()
     sys.stdout.flush()
