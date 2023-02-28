@@ -2,20 +2,24 @@ package ebpf
 
 import (
 	"errors"
+	"fmt"
+	"os"
+	"time"
+
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/rlimit"
 	jww "github.com/spf13/jwalterweatherman"
-	"ogomon/internal"
-	"time"
+
+	"github.com/rs/zerolog"
 )
 
 //go:generate go run github.com/cilium/ebpf/cmd/bpf2go@master -type event tcACL ../../ebpf/tc_acl.c -- -I../../ebpf/include -nostdinc -O3
 
 type NetworkTracer struct {
-	traceChannel chan internal.Trace
 	srcPort      int
 	destPort     int
 	ebpfObjs     *tcACLObjects
+	logger       zerolog.Logger
 }
 
 func NewNetworkTracer(srcPort, destPort int) (NetworkTracer, error) {
@@ -26,11 +30,13 @@ func NewNetworkTracer(srcPort, destPort int) (NetworkTracer, error) {
 	if err := loadTcACLObjects(&objs, nil); err != nil {
 		return NetworkTracer{}, err
 	}
+	l, _ := os.OpenFile("records/packets", os.O_RDWR|os.O_CREATE, 0777)
+	log := zerolog.New(l)
 	nt := NetworkTracer{
-		traceChannel: make(chan internal.Trace, 10000),
 		srcPort:      srcPort,
 		destPort:     destPort,
 		ebpfObjs:     &objs,
+		logger:	      log,
 	}
 	return nt, nil
 }
@@ -38,8 +44,8 @@ func NewNetworkTracer(srcPort, destPort int) (NetworkTracer, error) {
 func (tracer NetworkTracer) Start(ticker time.Ticker, stop chan bool) {
 	err := tracer.getEbpfObjects().PortHolder.Put(uint64(0), uint64(tracer.srcPort))
 	err = tracer.getEbpfObjects().PortHolder.Put(uint64(1), uint64(tracer.destPort))
-	keysOut = make([]uint64, 50000)
-	valsOut = make([]tcACLEvent, 50000)
+	keysOut = make([]uint64, 100000)
+	valsOut = make([]tcACLEvent, 100000)
 	if err != nil {
 		jww.INFO.Println(err)
 	}
@@ -49,15 +55,11 @@ func (tracer NetworkTracer) Start(ticker time.Ticker, stop chan bool) {
 			tracer.tickFrameSize()
 		case <-stop:
 			tracer.tearDown()
-			close(tracer.traceChannel)
 			return
 		}
 	}
 }
 
-func (tracer NetworkTracer) Chan() chan internal.Trace {
-	return tracer.traceChannel
-}
 
 func (tracer NetworkTracer) tearDown() {
 	tracer.ebpfObjs.Close()
@@ -74,9 +76,17 @@ func (tracer NetworkTracer) tickFrameSize() {
 		_, err := tracer.getEbpfObjects().Events.BatchLookupAndDelete(prevKey, &nextKeyOut, keysOut, valsOut, nil)
 		idx := uint64(0)
 		for keysOut[idx] != 0 && valsOut[idx].Sport != 0 {
-			nt := internal.NetworkTrace{Len: valsOut[idx].Len, Sport: valsOut[idx].Sport, Dport: valsOut[idx].Dport, Direction: valsOut[idx].Direction, Saddr: valsOut[idx].Saddr, Daddr: valsOut[idx].Daddr}
 			// TODO: There is a bug here, some 0s for time has been seen.
-			tracer.traceChannel <- internal.Trace{TS: keysOut[idx], Data: nt}
+			data := fmt.Sprintf(
+				"%d,%d,%d,%d,%d,%d", 
+				keysOut[idx], 
+				valsOut[idx].Len, 
+				valsOut[idx].Saddr, 
+				valsOut[idx].Daddr, 
+				valsOut[idx].Sport, 
+				valsOut[idx].Dport, 
+			)
+			tracer.logger.Log().Str("r", data)
 			idx++
 		}
 		if err != nil {

@@ -60,13 +60,12 @@ func (m Monitor) Start() error {
 	UTimeTracer, err := internal.NewUTimeTracer(&m.proc)
 
 	tracers := []internal.Tracer{diskWriteTracer, diskReadTracer, socketTracer, residentMemoryTracer, memoryTracer, dataVirtualMemoryTracer, CSTimeTrace, CUTimeTrace, STimeTracer, UTimeTracer}
-	names := []string{"disk_write", "disk_read", "packets", "rss_memory", "memory", "data_memory", "cs_time", "cu_time", "s_time", "u_time"}
 
 	var tickers []*time.Ticker
 
 	for idx, _ := range tracers {
 		stopCount++
-		wg.Add(2)
+		wg.Add(1)
 		tmpTracer := idx
 
 		ticker := time.NewTicker(TICKER_TIME)
@@ -75,10 +74,6 @@ func (m Monitor) Start() error {
 		go func() {
 			defer wg.Done()
 			tracers[tmpTracer].Start(*ticker, stop)
-		}()
-		go func() {
-			defer wg.Done()
-			internal.LogTrace(tracers[tmpTracer].Chan(), fmt.Sprintf("records/%s", names[tmpTracer]))
 		}()
 	}
 
