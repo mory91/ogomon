@@ -23,7 +23,7 @@ func GetTargetProc(name string) (procfs.Proc, error) {
 		cmdParts, _ := p.CmdLine()
 		for _, cmdPart := range cmdParts {
 			if strings.Index(cmdPart, name) >= 0  {
-				return p, nil
+				targetProc = p
 			}
 		}
 	}
