@@ -21,11 +21,12 @@ bpf_source = bpf_source.replace("SAMPLE_EVERY_N", str(sample_every_n))
 bpf = BPF(text=bpf_source)
 cudart_lib = "/home/morteza/anaconda3/envs/digger/lib/python3.10/site-packages/torch/lib/libcudart-a7b20f20.so.11.0"
 cudart_lib2 = "/home/morteza/anaconda3/envs/digger/lib/python3.10/site-packages/torchvision.libs/libcudart.053364c0.so.11.0"
-# attach_probes(bpf, "cudaMalloc", name=cudart_lib)
-# attach_probes(bpf, "cudaHostAlloc", name=cudart_lib)
+cudart_lib3 = "/home/morteza/anaconda3/envs/torch/lib/libcudart.so.11.0"
+attach_probes(bpf, "cudaMalloc", name=cudart_lib2)
+attach_probes(bpf, "cudaHostAlloc", name=cudart_lib3)
 # attach_probes(bpf, "cudaMemcpy", name=cudart_lib)
-# attach_probes(bpf, "cudaMallocAsync", name=cudart_lib)
-attach_probes(bpf, "cudaMemcpyAsync", name=cudart_lib, pid=pid)
+attach_probes(bpf, "cudaMallocAsync", name=cudart_lib2)
+attach_probes(bpf, "cudaMemcpyAsync", name=cudart_lib3, pid=pid)
 
 
 def callback(ctx, data, size):

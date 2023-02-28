@@ -16,6 +16,7 @@ import (
 func GetTargetProc(name string) (procfs.Proc, error) {
 	procs, err := procfs.AllProcs()
 	var targetProc procfs.Proc
+	found := false
 	if err != nil {
 		return procfs.Proc{}, err
 	}
@@ -24,8 +25,12 @@ func GetTargetProc(name string) (procfs.Proc, error) {
 		for _, cmdPart := range cmdParts {
 			if strings.Index(cmdPart, name) >= 0  {
 				targetProc = p
+				found = true
 			}
 		}
+	}
+	if !found {
+		return targetProc, nil
 	}
 	return targetProc, fmt.Errorf("NOT FOUND")
 }
