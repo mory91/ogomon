@@ -30,7 +30,7 @@ func NewNetworkTracer(srcPort, destPort int) (NetworkTracer, error) {
 	if err := loadTcACLObjects(&objs, nil); err != nil {
 		return NetworkTracer{}, err
 	}
-	l, _ := os.OpenFile("records/packets", os.O_RDWR|os.O_CREATE, 0777)
+	l, _ := os.Create("records/packets")
 	log := zerolog.New(l)
 	nt := NetworkTracer{
 		srcPort:      srcPort,
@@ -44,8 +44,8 @@ func NewNetworkTracer(srcPort, destPort int) (NetworkTracer, error) {
 func (tracer NetworkTracer) Start(ticker time.Ticker, stop chan bool) {
 	err := tracer.getEbpfObjects().PortHolder.Put(uint64(0), uint64(tracer.srcPort))
 	err = tracer.getEbpfObjects().PortHolder.Put(uint64(1), uint64(tracer.destPort))
-	keysOut = make([]uint64, 100000)
-	valsOut = make([]tcACLEvent, 100000)
+	keysOut = make([]uint64, 1000000)
+	valsOut = make([]tcACLEvent, 1000000)
 	if err != nil {
 		jww.INFO.Println(err)
 	}
@@ -86,7 +86,7 @@ func (tracer NetworkTracer) tickFrameSize() {
 				valsOut[idx].Sport, 
 				valsOut[idx].Dport, 
 			)
-			tracer.logger.Log().Str("r", data)
+			tracer.logger.Log().Str("r", data).Msg("")
 			idx++
 		}
 		if err != nil {
