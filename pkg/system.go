@@ -24,12 +24,14 @@ func GetTargetProc(name string) (procfs.Proc, error) {
 		cmdParts, _ := p.CmdLine()
 		for _, cmdPart := range cmdParts {
 			if strings.Index(cmdPart, name) >= 0  {
-				targetProc = p
-				found = true
+				if strings.Index(cmdPart, "ogomon") < 0  {
+					targetProc = p
+					found = true
+				}
 			}
 		}
 	}
-	if !found {
+	if found {
 		return targetProc, nil
 	}
 	return targetProc, fmt.Errorf("NOT FOUND")
