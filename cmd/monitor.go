@@ -30,7 +30,7 @@ var (
 )
 
 const (
-	STEP        = 500
+	STEP        = 100
 	TICKER_TIME = time.Microsecond * STEP
 )
 

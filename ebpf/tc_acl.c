@@ -55,7 +55,7 @@ struct bpf_map_def SEC("maps") events = {
 	.type = BPF_MAP_TYPE_HASH,
 	.key_size = sizeof(__u64),
 	.value_size = sizeof(struct event),
-	.max_entries = 10000,
+	.max_entries = 100000,
 };
 
 struct bpf_map_def SEC("maps") port_holder = {
