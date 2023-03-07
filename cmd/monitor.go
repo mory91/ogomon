@@ -12,6 +12,7 @@ import (
 	"sync"
 	"syscall"
 	"time"
+	"errors"
 
 	"github.com/prometheus/procfs"
 	"github.com/spf13/cobra"
@@ -20,6 +21,7 @@ import (
 
 type Monitor struct {
 	proc procfs.Proc
+	cancelChan chan bool
 }
 
 var (
@@ -34,7 +36,7 @@ const (
 	TICKER_TIME = time.Microsecond * STEP
 )
 
-func (m Monitor) Start() error {
+func (m Monitor) Start(appendFile bool) error {
 	stat, _ := m.proc.Stat()
 	jww.INFO.Printf("PID: %d", stat.PID)
 	jww.INFO.Printf("Executable Name: %s", stat.Comm)
@@ -42,22 +44,20 @@ func (m Monitor) Start() error {
 	stop := make(chan bool)
 	stopCount := 0
 
-	cancelSig := make(chan os.Signal, 1)
-	signal.Notify(cancelSig, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
 
-	socketTracer, err := ebpf.NewFilterSocketTracer(deviceName, srcPort, destPort)
+	socketTracer, err := ebpf.NewFilterSocketTracer(deviceName, srcPort, destPort, appendFile)
 	if err != nil {
 		jww.ERROR.Fatalln(err)
 	}
-	diskReadTracer, err := internal.NewDiskReadTracer(&m.proc)
-	diskWriteTracer, err := internal.NewDiskWriteTracer(&m.proc)
-	memoryTracer, err := internal.NewMemoryTracer(&m.proc)
-	residentMemoryTracer, err := internal.NewResidentMemoryTracer(&m.proc)
-	dataVirtualMemoryTracer, err := internal.NewDataVirtualMemoryTracer(&m.proc)
-	CSTimeTrace, err := internal.NewCSTimeTracer(&m.proc)
-	CUTimeTrace, err := internal.NewCUTimeTracer(&m.proc)
-	STimeTracer, err := internal.NewSTimeTracer(&m.proc)
-	UTimeTracer, err := internal.NewUTimeTracer(&m.proc)
+	diskReadTracer, err := internal.NewDiskReadTracer(&m.proc, appendFile)
+	diskWriteTracer, err := internal.NewDiskWriteTracer(&m.proc, appendFile)
+	memoryTracer, err := internal.NewMemoryTracer(&m.proc, appendFile)
+	residentMemoryTracer, err := internal.NewResidentMemoryTracer(&m.proc, appendFile)
+	dataVirtualMemoryTracer, err := internal.NewDataVirtualMemoryTracer(&m.proc, appendFile)
+	CSTimeTrace, err := internal.NewCSTimeTracer(&m.proc, appendFile)
+	CUTimeTrace, err := internal.NewCUTimeTracer(&m.proc, appendFile)
+	STimeTracer, err := internal.NewSTimeTracer(&m.proc, appendFile)
+	UTimeTracer, err := internal.NewUTimeTracer(&m.proc, appendFile)
 
 	tracers := []internal.Tracer{diskWriteTracer, diskReadTracer, socketTracer, residentMemoryTracer, memoryTracer, dataVirtualMemoryTracer, CSTimeTrace, CUTimeTrace, STimeTracer, UTimeTracer}
 
@@ -82,18 +82,18 @@ func (m Monitor) Start() error {
 	cudaMemCommand := exec.Command("sudo", "./python/cuda_mem.py", "-p", fmt.Sprintf("%d", stat.PID), "-s", strconv.FormatInt(TICKER_TIME.Nanoseconds(), 10))
 	sendCommand := exec.Command("sudo", "./python/send.py", "-p", fmt.Sprintf("%d", stat.PID))
 	kcacheCommand := exec.Command("sudo", "./python/kcache.py", "-p", fmt.Sprintf("%d", stat.PID))
-	go pkg.CreateProcessAndPipeToFile(cpuMemCommand, "./records/cpu_allocations")
-	go pkg.CreateProcessAndPipeToFile(cudaMemCommand, "./records/cuda_allocations")
-	go pkg.CreateProcessAndPipeToFile(sendCommand, "./records/sends")
-	go pkg.CreateProcessAndPipeToFile(kcacheCommand, "./records/kcache")
+	go pkg.CreateProcessAndPipeToFile(cpuMemCommand, "./records/cpu_allocations", appendFile)
+	go pkg.CreateProcessAndPipeToFile(cudaMemCommand, "./records/cuda_allocations", appendFile)
+	go pkg.CreateProcessAndPipeToFile(sendCommand, "./records/sends", appendFile)
+	go pkg.CreateProcessAndPipeToFile(kcacheCommand, "./records/kcache", appendFile)
 	// external commands section
 
 	if err != nil {
 		panic(err)
 	}
 
-	<-cancelSig
-
+	<-m.cancelChan
+	
 	cpuMemCommand.Process.Signal(syscall.SIGTERM)
 	sendCommand.Process.Signal(syscall.SIGTERM)
 	cudaMemCommand.Process.Signal(syscall.SIGTERM)
@@ -108,20 +108,70 @@ func (m Monitor) Start() error {
 	return nil
 }
 
+func monitorProcess(proc procfs.Proc, cancelChan chan bool, appendFile bool) error {
+	m := Monitor{proc: proc, cancelChan: cancelChan}
+	if err := m.Start(appendFile); err != nil {
+		return err
+	}
+	return nil
+}
+
+func newOgomon(exeName string, notFoundChan chan bool, cancelChan chan bool, appendFile bool) {
+	proc, err := pkg.GetTargetProc(exeName)
+	if err != nil {
+		for c := 0; c < 3; c++ {
+			proc, err = pkg.GetTargetProc(exeName)
+			if err == nil {
+				break
+			} else {
+				jww.ERROR.Println(err)
+				time.Sleep(1 * time.Second)
+			}
+		}
+		os.Exit(1)
+	}
+	go func(process procfs.Proc) {
+		var errTarget *os.PathError
+		for {
+			_, err := process.Comm()
+			if err != nil && errors.As(err, &errTarget) {
+				jww.INFO.Println("Process Closed")
+				notFoundChan <- true
+				break
+			}
+		}
+	}(proc)
+	go monitorProcess(proc, cancelChan, appendFile)
+}
+
+func ogomonControl(exeName string) {
+	dieSignalChan := make(chan os.Signal)
+	notFoundChan := make(chan bool)
+	signal.Notify(dieSignalChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
+	cancelChan := make(chan bool)
+	newOgomon(exeName, notFoundChan, cancelChan, false)
+	LOOP:
+	for {
+		select {
+		case <- dieSignalChan:
+			cancelChan <- true
+			close(dieSignalChan)
+			close(notFoundChan)
+			break LOOP
+		case <- notFoundChan:
+			cancelChan <- true
+			newOgomon(exeName, notFoundChan, cancelChan, true)
+			
+		}
+	}
+}
+
 var monitorCmd = &cobra.Command{
 	Use:   "monitor",
 	Short: "memory and disk",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		jww.INFO.Println("Monitor Starting")
-		proc, err := pkg.GetTargetProc(executableName)
-		if err != nil {
-			jww.ERROR.Println(err)
-			os.Exit(1)
-		}
-		m := Monitor{proc: proc}
-		if err := m.Start(); err != nil {
-			return err
-		}
+		ogomonControl(executableName)
 		return nil
 	},
 }

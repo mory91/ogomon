@@ -42,11 +42,11 @@ type FilterSocketTracer struct {
 	NetworkTracer
 }
 
-func NewFilterSocketTracer(deviceName string, srcPort, destPort int) (FilterSocketTracer, error) {
+func NewFilterSocketTracer(deviceName string, srcPort, destPort int, appendFile bool) (FilterSocketTracer, error) {
 	iface := net.Interface{
 		Name: deviceName,
 	}
-	nt, err := NewNetworkTracer(srcPort, destPort)
+	nt, err := NewNetworkTracer(srcPort, destPort, appendFile)
 	if err != nil {
 		return FilterSocketTracer{}, err
 	}

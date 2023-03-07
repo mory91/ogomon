@@ -33,7 +33,7 @@ type TcNetworkTracer struct {
 type Cleaner func()
 
 func NewTcNetworkTracer(deviceName string, srcPort, destPort int, direction Direction) (TcNetworkTracer, error) {
-	nt, err := NewNetworkTracer(srcPort, destPort)
+	nt, err := NewNetworkTracer(srcPort, destPort, false)
 	if err != nil {
 		return TcNetworkTracer{}, err
 	}

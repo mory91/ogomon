@@ -17,56 +17,101 @@ type SystemTracer struct {
 	logger       zerolog.Logger
 }
 
-func NewDiskReadTracer(proc *procfs.Proc) (SystemTracer, error) {
-	logFile, _ := os.Create("records/disk_read")
+func NewDiskReadTracer(proc *procfs.Proc, appendFile bool) (SystemTracer, error) {
+	var logFile *os.File
+	if !appendFile {
+		logFile, _ = os.Create("records/disk_read")
+	} else {
+		logFile, _ = os.OpenFile("records/disk_read", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	}
 	logger := zerolog.New(logFile)
 	return SystemTracer{proc: proc, ticker: tickDiskRead, logger: logger}, nil
 }
 
-func NewDiskWriteTracer(proc *procfs.Proc) (SystemTracer, error) {
-	logFile, _ := os.Create("records/disk_write")
+func NewDiskWriteTracer(proc *procfs.Proc, appendFile bool) (SystemTracer, error) {
+	var logFile *os.File
+	if !appendFile {
+		logFile, _ = os.Create("records/disk_write")
+	} else {
+		logFile, _ = os.OpenFile("records/disk_write", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	}
 	logger := zerolog.New(logFile)
 	return SystemTracer{proc: proc, ticker: tickDiskWrite, logger: logger}, nil
 }
 
-func NewMemoryTracer(proc *procfs.Proc) (SystemTracer, error) {
-	logFile, _ := os.Create("records/memory")
+func NewMemoryTracer(proc *procfs.Proc, appendFile bool) (SystemTracer, error) {
+	var logFile *os.File
+	if !appendFile {
+		logFile, _ = os.Create("records/memory")
+	} else {
+		logFile, _ = os.OpenFile("records/memory", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	}
 	logger := zerolog.New(logFile)
 	return SystemTracer{proc: proc, ticker: tickVirtualMemory, logger: logger}, nil
 }
 
-func NewResidentMemoryTracer(proc *procfs.Proc) (SystemTracer, error) {
-	logFile, _ := os.Create("records/rss_memory")
+func NewResidentMemoryTracer(proc *procfs.Proc, appendFile bool) (SystemTracer, error) {
+	var logFile *os.File
+	if !appendFile {
+		logFile, _ = os.Create("records/rss_memory")
+	} else {
+		logFile, _ = os.OpenFile("records/rss_memory", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	}
 	logger := zerolog.New(logFile)
 	return SystemTracer{proc: proc, ticker: tickResidentMemory, logger: logger}, nil
 }
 
-func NewDataVirtualMemoryTracer(proc *procfs.Proc) (SystemTracer, error) {
-	logFile, _ := os.Create("records/data_memory")
+func NewDataVirtualMemoryTracer(proc *procfs.Proc, appendFile bool) (SystemTracer, error) {
+	var logFile *os.File
+	if !appendFile {
+		logFile, _ = os.Create("records/data_memory")
+	} else {
+		logFile, _ = os.OpenFile("records/data_memory", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	}
 	logger := zerolog.New(logFile)
 	return SystemTracer{proc: proc, ticker: tickDataVirtualMemory, logger: logger}, nil
 }
 
-func NewSTimeTracer(proc *procfs.Proc) (SystemTracer, error) {
-	logFile, _ := os.Create("records/s_time")
+func NewSTimeTracer(proc *procfs.Proc, appendFile bool) (SystemTracer, error) {
+	var logFile *os.File
+	if !appendFile {
+		logFile, _ = os.Create("records/s_time")
+	} else {
+		logFile, _ = os.OpenFile("records/s_time", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	}
 	logger := zerolog.New(logFile)
 	return SystemTracer{proc: proc, ticker: tickSTime, logger: logger}, nil
 }
 
-func NewUTimeTracer(proc *procfs.Proc) (SystemTracer, error) {
-	logFile, _ := os.Create("records/u_time")
+func NewUTimeTracer(proc *procfs.Proc, appendFile bool) (SystemTracer, error) {
+	var logFile *os.File
+	if !appendFile {
+		logFile, _ = os.Create("records/u_time")
+	} else {
+		logFile, _ = os.OpenFile("records/u_time", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	}
 	logger := zerolog.New(logFile)
 	return SystemTracer{proc: proc, ticker: tickUTime, logger: logger}, nil
 }
 
-func NewCSTimeTracer(proc *procfs.Proc) (SystemTracer, error) {
-	logFile, _ := os.Create("records/cs_time")
+func NewCSTimeTracer(proc *procfs.Proc, appendFile bool) (SystemTracer, error) {
+	var logFile *os.File
+	if !appendFile {
+		logFile, _ = os.Create("records/cs_time")
+	} else {
+		logFile, _ = os.OpenFile("records/cs_time", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	}
 	logger := zerolog.New(logFile)
 	return SystemTracer{proc: proc, ticker: tickCSTime, logger: logger}, nil
 }
 
-func NewCUTimeTracer(proc *procfs.Proc) (SystemTracer, error) {
-	logFile, _ := os.Create("records/cu_time")
+func NewCUTimeTracer(proc *procfs.Proc, appendFile bool) (SystemTracer, error) {
+	var logFile *os.File
+	if !appendFile {
+		logFile, _ = os.Create("records/cu_time")
+	} else {
+		logFile, _ = os.OpenFile("records/cu_time", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	}
 	logger := zerolog.New(logFile)
 	return SystemTracer{proc: proc, ticker: tickCUTime, logger: logger}, nil
 }

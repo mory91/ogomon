@@ -22,7 +22,7 @@ type NetworkTracer struct {
 	logger       zerolog.Logger
 }
 
-func NewNetworkTracer(srcPort, destPort int) (NetworkTracer, error) {
+func NewNetworkTracer(srcPort, destPort int, appendFile bool) (NetworkTracer, error) {
 	if err := rlimit.RemoveMemlock(); err != nil {
 		return NetworkTracer{}, err
 	}
@@ -30,7 +30,12 @@ func NewNetworkTracer(srcPort, destPort int) (NetworkTracer, error) {
 	if err := loadTcACLObjects(&objs, nil); err != nil {
 		return NetworkTracer{}, err
 	}
-	l, _ := os.Create("records/packets")
+	var l *os.File
+	if !appendFile {
+		l, _ = os.Create("records/packets")
+	} else {
+		l, _ = os.OpenFile("records/packets", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	}
 	log := zerolog.New(l)
 	nt := NetworkTracer{
 		srcPort:      srcPort,

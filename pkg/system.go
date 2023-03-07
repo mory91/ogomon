@@ -16,16 +16,27 @@ import (
 func GetTargetProc(name string) (procfs.Proc, error) {
 	procs, err := procfs.AllProcs()
 	var targetProc procfs.Proc
+	found := false
+	ogomon := false
 	if err != nil {
 		return procfs.Proc{}, err
 	}
 	for _, p := range procs {
 		cmdParts, _ := p.CmdLine()
+		ogomon = false
 		for _, cmdPart := range cmdParts {
 			if strings.Index(cmdPart, name) >= 0  {
-				return p, nil
+				targetProc = p
+				found = true
+			}
+			if strings.Index(cmdPart, "ogomon") >= 0 {
+				ogomon = true
+				break
 			}
 		}
+	}
+	if found && !ogomon {
+		return targetProc, nil
 	}
 	return targetProc, fmt.Errorf("NOT FOUND")
 }
@@ -45,13 +56,23 @@ func Htons(i uint16) uint16 {
 	return *(*uint16)(unsafe.Pointer(&b[0]))
 }
 
-func CreateProcessAndPipeToFile(cmd *exec.Cmd, filename string) {
-	outfile, err := os.Create(filename)
-	if err != nil {
-		panic(err)
+func CreateProcessAndPipeToFile(cmd *exec.Cmd, filename string, appendFile bool) {
+	var logFile *os.File
+	var err error
+	if !appendFile {
+		logFile, err = os.Create(filename)
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		logFile, _ = os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			panic(err)
+		}
 	}
-	defer outfile.Close()
-	cmd.Stdout = outfile
+
+	defer logFile.Close()
+	cmd.Stdout = logFile
 	var errbuf strings.Builder
 	cmd.Stderr = &errbuf
 	err = cmd.Start()
