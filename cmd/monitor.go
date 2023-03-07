@@ -31,11 +31,6 @@ var (
 	wg         sync.WaitGroup
 )
 
-const (
-	STEP        = 100
-	TICKER_TIME = time.Microsecond * STEP
-)
-
 func (m Monitor) Start(appendFile bool) error {
 	stat, _ := m.proc.Stat()
 	jww.INFO.Printf("PID: %d", stat.PID)
@@ -68,7 +63,7 @@ func (m Monitor) Start(appendFile bool) error {
 		wg.Add(1)
 		tmpTracer := idx
 
-		ticker := time.NewTicker(TICKER_TIME)
+		ticker := time.NewTicker(tracers[tmpTracer].GetTickerTime())
 		tickers = append(tickers, ticker)
 
 		go func() {
@@ -78,8 +73,8 @@ func (m Monitor) Start(appendFile bool) error {
 	}
 
 	// external commands section
-	cpuMemCommand := exec.Command("sudo", "./python/cpu_mem.py", "-p", fmt.Sprintf("%d", stat.PID), "-s", strconv.FormatInt(TICKER_TIME.Nanoseconds(), 10))
-	cudaMemCommand := exec.Command("sudo", "./python/cuda_mem.py", "-p", fmt.Sprintf("%d", stat.PID), "-s", strconv.FormatInt(TICKER_TIME.Nanoseconds(), 10))
+	cpuMemCommand := exec.Command("sudo", "./python/cpu_mem.py", "-p", fmt.Sprintf("%d", stat.PID), "-s", strconv.FormatInt(memoryTracer.GetTickerTime().Nanoseconds(), 10))
+	cudaMemCommand := exec.Command("sudo", "./python/cuda_mem.py", "-p", fmt.Sprintf("%d", stat.PID), "-s", strconv.FormatInt(memoryTracer.GetTickerTime().Nanoseconds(), 10))
 	sendCommand := exec.Command("sudo", "./python/send.py", "-p", fmt.Sprintf("%d", stat.PID))
 	kcacheCommand := exec.Command("sudo", "./python/kcache.py", "-p", fmt.Sprintf("%d", stat.PID))
 	go pkg.CreateProcessAndPipeToFile(cpuMemCommand, "./records/cpu_allocations", appendFile)
@@ -135,8 +130,8 @@ func newOgomon(exeName string, notFoundChan chan bool, cancelChan chan bool, app
 		for {
 			_, err := process.Comm()
 			if err != nil && errors.As(err, &errTarget) {
-				jww.INFO.Println("Process Closed")
 				notFoundChan <- true
+				jww.INFO.Println("Process Closed")
 				break
 			}
 		}

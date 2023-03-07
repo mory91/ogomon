@@ -4,6 +4,7 @@ import "time"
 
 type Tracer interface {
 	Start(ticker time.Ticker, stop chan bool)
+	GetTickerTime() time.Duration
 }
 type Trace struct {
 	Data interface{}

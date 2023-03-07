@@ -13,6 +13,12 @@ import (
 	"github.com/rs/zerolog"
 )
 
+const (
+	NET_STAT_STEP        = 100
+	NET_STAT_TICKER_TIME = time.Microsecond * NET_STAT_STEP
+)
+
+
 //go:generate go run github.com/cilium/ebpf/cmd/bpf2go@master -type event tcACL ../../ebpf/tc_acl.c -- -I../../ebpf/include -nostdinc -O3
 
 type NetworkTracer struct {
@@ -20,6 +26,7 @@ type NetworkTracer struct {
 	destPort     int
 	ebpfObjs     *tcACLObjects
 	logger       zerolog.Logger
+	tickerTime   time.Duration
 }
 
 func NewNetworkTracer(srcPort, destPort int, appendFile bool) (NetworkTracer, error) {
@@ -42,6 +49,7 @@ func NewNetworkTracer(srcPort, destPort int, appendFile bool) (NetworkTracer, er
 		destPort:     destPort,
 		ebpfObjs:     &objs,
 		logger:	      log,
+		tickerTime:   NET_STAT_TICKER_TIME,
 	}
 	return nt, nil
 }
@@ -63,6 +71,10 @@ func (tracer NetworkTracer) Start(ticker time.Ticker, stop chan bool) {
 			return
 		}
 	}
+}
+
+func (tracer NetworkTracer) GetTickerTime() time.Duration {
+	return tracer.tickerTime
 }
 
 
