@@ -31,7 +31,7 @@ attach_probes(bpf, "cudaMemcpyAsync", name=cudart_lib3, pid=pid)
 
 def callback(ctx, data, size):
     event = bpf['events'].event(data)
-    print("%d\t%d" % (event.timestamp_ns, event.size))
+    print("%d,%d" % (event.timestamp_ns, event.size))
 
 
 bpf['events'].open_ring_buffer(callback)
