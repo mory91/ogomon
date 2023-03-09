@@ -63,7 +63,7 @@ func NewFilterSocketTracer(deviceName string, srcPort, destPort int, appendFile 
 	return FilterSocketTracer{socketFD: socket, NetworkTracer: nt}, nil
 }
 
-func (tracer FilterSocketTracer) tearDown() {
+func (tracer FilterSocketTracer) TearDown() {
 	syscall.Close(tracer.socketFD)
-	tracer.NetworkTracer.tearDown()
+	tracer.NetworkTracer.TearDown()
 }

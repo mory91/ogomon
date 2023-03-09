@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"os"
 	"time"
+	"bufio"
 
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/rlimit"
 	jww "github.com/spf13/jwalterweatherman"
-
-	"github.com/rs/zerolog"
 )
 
 const (
@@ -25,8 +24,9 @@ type NetworkTracer struct {
 	srcPort      int
 	destPort     int
 	ebpfObjs     *tcACLObjects
-	logger       zerolog.Logger
+	writer       *bufio.Writer
 	tickerTime   time.Duration
+	traceFile    *os.File
 }
 
 func NewNetworkTracer(srcPort, destPort int, appendFile bool) (NetworkTracer, error) {
@@ -43,13 +43,14 @@ func NewNetworkTracer(srcPort, destPort int, appendFile bool) (NetworkTracer, er
 	} else {
 		l, _ = os.OpenFile("records/packets", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	}
-	log := zerolog.New(l)
+	writer := bufio.NewWriter(l)
 	nt := NetworkTracer{
 		srcPort:      srcPort,
 		destPort:     destPort,
 		ebpfObjs:     &objs,
-		logger:	      log,
+		writer:	      writer,
 		tickerTime:   NET_STAT_TICKER_TIME,
+		traceFile:    l,
 	}
 	return nt, nil
 }
@@ -67,7 +68,7 @@ func (tracer NetworkTracer) Start(ticker time.Ticker, stop chan bool) {
 		case <-ticker.C:
 			tracer.tickFrameSize()
 		case <-stop:
-			tracer.tearDown()
+			tracer.TearDown()
 			return
 		}
 	}
@@ -78,8 +79,10 @@ func (tracer NetworkTracer) GetTickerTime() time.Duration {
 }
 
 
-func (tracer NetworkTracer) tearDown() {
+func (tracer NetworkTracer) TearDown() {
+	tracer.writer.Flush()
 	tracer.ebpfObjs.Close()
+	tracer.traceFile.Close()
 }
 
 func (tracer NetworkTracer) getEbpfObjects() *tcACLObjects {
@@ -95,7 +98,7 @@ func (tracer NetworkTracer) tickFrameSize() {
 		for keysOut[idx] != 0 && valsOut[idx].Sport != 0 {
 			// TODO: There is a bug here, some 0s for time has been seen.
 			data := fmt.Sprintf(
-				"%d,%d,%d,%d,%d,%d", 
+				"%d,%d,%d,%d,%d,%d\n", 
 				keysOut[idx], 
 				valsOut[idx].Len, 
 				valsOut[idx].Saddr, 
@@ -103,7 +106,7 @@ func (tracer NetworkTracer) tickFrameSize() {
 				valsOut[idx].Sport, 
 				valsOut[idx].Dport, 
 			)
-			tracer.logger.Log().Str("r", data).Msg("")
+			tracer.writer.WriteString(data)
 			idx++
 		}
 		if err != nil {
@@ -118,4 +121,5 @@ func (tracer NetworkTracer) tickFrameSize() {
 			prevKey = &nextKeyOut
 		}
 	}
+	tracer.writer.Flush()
 }

@@ -19,7 +19,7 @@ var (
 )
 
 type TcFilter struct {
-	tearDown Cleaner
+	TearDown Cleaner
 }
 
 type Direction uint32
@@ -57,9 +57,9 @@ func NewTcNetworkTracer(deviceName string, srcPort, destPort int, direction Dire
 	}, nil
 }
 
-func (tracer TcNetworkTracer) tearDown() {
-	tracer.NetworkTracer.tearDown()
-	tracer.tcFilter.tearDown()
+func (tracer TcNetworkTracer) TearDown() {
+	tracer.NetworkTracer.TearDown()
+	tracer.tcFilter.TearDown()
 }
 
 func InitQdisc(link netlink.Link) *netlink.GenericQdisc {
@@ -133,7 +133,7 @@ func NewTcFilter(deviceName string, netlinkDir uint32, filterObjs tcACLObjects) 
 		netlink.LinkSetXdpFdWithFlags(link, -1, xdpFlags((link).Type()))
 	}
 
-	return &TcFilter{tearDown: teardownFilter}, nil
+	return &TcFilter{TearDown: teardownFilter}, nil
 }
 
 func xdpFlags(linkType string) int {

@@ -5,6 +5,7 @@ import "time"
 type Tracer interface {
 	Start(ticker time.Ticker, stop chan bool)
 	GetTickerTime() time.Duration
+	TearDown()
 }
 type Trace struct {
 	Data interface{}

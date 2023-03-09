@@ -29,6 +29,7 @@ var (
 	srcPort    int
 	destPort   int
 	wg         sync.WaitGroup
+	controlWg  sync.WaitGroup
 )
 
 func (m Monitor) Start(appendFile bool) error {
@@ -100,6 +101,7 @@ func (m Monitor) Start(appendFile bool) error {
 		stop <- true
 	}
 	wg.Wait()
+	controlWg.Done()
 	return nil
 }
 
@@ -144,6 +146,7 @@ func ogomonControl(exeName string) {
 	notFoundChan := make(chan bool)
 	signal.Notify(dieSignalChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
 	cancelChan := make(chan bool)
+	controlWg.Add(1)
 	newOgomon(exeName, notFoundChan, cancelChan, false)
 	LOOP:
 	for {
@@ -152,6 +155,8 @@ func ogomonControl(exeName string) {
 			cancelChan <- true
 			close(dieSignalChan)
 			close(notFoundChan)
+			// WAIT FOR OGOMONG TO END
+			controlWg.Wait()
 			break LOOP
 		case <- notFoundChan:
 			cancelChan <- true
