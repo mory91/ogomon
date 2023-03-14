@@ -14,7 +14,7 @@ import (
 
 const (
 	NET_STAT_STEP        = 100
-	NET_STAT_TICKER_TIME = time.Millisecond * NET_STAT_STEP
+	NET_STAT_TICKER_TIME = time.Microsecond * NET_STAT_STEP
 )
 
 

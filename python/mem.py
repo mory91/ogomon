@@ -11,15 +11,36 @@ struct event {
         u64 timestamp_ns;
 };
 
+BPF_ARRAY(sizes, u64, 1);
+BPF_ARRAY(times, u64, 1);
 BPF_RINGBUF_OUTPUT(events, 1 << 12);
 
 static inline int gen_alloc_enter(struct pt_regs *ctx, size_t size) {
-        u64 ts = bpf_ktime_get_ns();
-        struct event event = {};
-        event.size = size;
-        event.timestamp_ns = ts;
-        events.ringbuf_output(&event, sizeof(event), 0);
+    int key = 0;
+    u64 zero = 0;
+    u64 this_size = size;
+    u64* prev_ts = times.lookup(&key);
+    u64 ts = bpf_ktime_get_ns();
+    u64* f_size = sizes.lookup(&key);
+    if (!f_size) {
+        sizes.update(&key, &this_size);
         return 0;
+    } else {
+        sizes.atomic_increment(key, this_size);
+    }
+    if (!prev_ts) {
+        times.update(&key, &zero);
+        return 0;
+    }
+    if (ts - *prev_ts >= SAMPLE_EVERY_N) {
+        struct event event = {};
+        event.size = *f_size + this_size;
+        event.timestamp_ns = *prev_ts;
+        events.ringbuf_output(&event, sizeof(event), 0);
+        times.update(&key, &ts);
+        sizes.update(&key, &zero);
+    }
+    return 0;
 }
 
 int malloc_enter(struct pt_regs *ctx, size_t size) {

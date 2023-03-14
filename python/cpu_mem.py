@@ -23,14 +23,14 @@ bpf_source = bpf_source.replace("SAMPLE_EVERY_N", str(sample_every_n))
 
 bpf = BPF(text=bpf_source)
 attach_probes(bpf, "malloc", pid=pid)
-attach_probes(bpf, "calloc", pid=pid)
-attach_probes(bpf, "realloc", pid=pid)
-attach_probes(bpf, "posix_memalign", pid=pid)
-attach_probes(bpf, "valloc", can_fail=True, pid=pid)
-attach_probes(bpf, "memalign", pid=pid)
-attach_probes(bpf, "pvalloc", can_fail=True, pid=pid)
-attach_probes(bpf, "aligned_alloc", can_fail=True, pid=pid)
-attach_probes(bpf, "mmap", pid=pid)
+# attach_probes(bpf, "calloc", pid=pid)
+# attach_probes(bpf, "realloc", pid=pid)
+# attach_probes(bpf, "posix_memalign", pid=pid)
+# attach_probes(bpf, "valloc", can_fail=True, pid=pid)
+# attach_probes(bpf, "memalign", pid=pid)
+# attach_probes(bpf, "pvalloc", can_fail=True, pid=pid)
+# attach_probes(bpf, "aligned_alloc", can_fail=True, pid=pid)
+# attach_probes(bpf, "mmap", pid=pid)
 
 
 def callback(ctx, data, size):
