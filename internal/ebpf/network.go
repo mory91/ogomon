@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	NET_STAT_STEP        = 10
+	NET_STAT_STEP        = 50
 	NET_STAT_TICKER_TIME = time.Microsecond * NET_STAT_STEP
 )
 
