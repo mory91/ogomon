@@ -34,6 +34,9 @@ func GetTargetProc(name string) (procfs.Proc, error) {
 				break
 			}
 		}
+		if found && !ogomon {
+			return targetProc, nil
+		}
 	}
 	if found && !ogomon {
 		return targetProc, nil
