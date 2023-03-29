@@ -13,35 +13,45 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-func GetTargetProc(name string) (procfs.Proc, error) {
-	procs, err := procfs.AllProcs()
-	var targetProc procfs.Proc
-	found := false
-	ogomon := false
-	if err != nil {
-		return procfs.Proc{}, err
-	}
-	for _, p := range procs {
-		cmdParts, _ := p.CmdLine()
-		ogomon = false
-		for _, cmdPart := range cmdParts {
-			if strings.Index(cmdPart, name) >= 0  {
-				targetProc = p
-				found = true
+func GetTargetProc(name string, pid int) (procfs.Proc, error) {
+	if pid != -1 {
+		var proc procfs.Proc
+		proc, err := procfs.NewProc(pid)
+		if err != nil {
+			jww.ERROR.Println(err)
+			return proc, err
+		}
+		return proc, nil
+	} else {
+		procs, err := procfs.AllProcs()
+		var targetProc procfs.Proc
+		found := false
+		ogomon := false
+		if err != nil {
+			return procfs.Proc{}, err
+		}
+		for _, p := range procs {
+			cmdParts, _ := p.CmdLine()
+			ogomon = false
+			for _, cmdPart := range cmdParts {
+				if strings.Index(cmdPart, name) >= 0  {
+					targetProc = p
+					found = true
+				}
+				if strings.Index(cmdPart, "ogomon") >= 0 {
+					ogomon = true
+					break
+				}
 			}
-			if strings.Index(cmdPart, "ogomon") >= 0 {
-				ogomon = true
-				break
+			if found && !ogomon {
+				return targetProc, nil
 			}
 		}
 		if found && !ogomon {
 			return targetProc, nil
 		}
+		return targetProc, fmt.Errorf("NOT FOUND")
 	}
-	if found && !ogomon {
-		return targetProc, nil
-	}
-	return targetProc, fmt.Errorf("NOT FOUND")
 }
 
 func OpenMemLock() {

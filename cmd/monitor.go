@@ -25,11 +25,13 @@ type Monitor struct {
 }
 
 var (
-	deviceName string
-	srcPort    int
-	destPort   int
-	wg         sync.WaitGroup
-	controlWg  sync.WaitGroup
+	deviceName	   string
+	srcPort    	   int
+	destPort   	   int
+	executableName	   string
+	pid		   int
+	wg		   sync.WaitGroup
+	controlWg	   sync.WaitGroup
 )
 
 func (m Monitor) Start(appendFile bool) error {
@@ -113,11 +115,11 @@ func monitorProcess(proc procfs.Proc, cancelChan chan bool, appendFile bool) err
 	return nil
 }
 
-func newOgomon(exeName string, notFoundChan chan bool, cancelChan chan bool, appendFile bool) {
-	proc, err := pkg.GetTargetProc(exeName)
+func newOgomon(exeName string, pid int, notFoundChan chan bool, cancelChan chan bool, appendFile bool) {
+	proc, err := pkg.GetTargetProc(exeName, pid)
 	if err != nil {
 		for c := 0; c < 3; c++ {
-			proc, err = pkg.GetTargetProc(exeName)
+			proc, err = pkg.GetTargetProc(exeName, pid)
 			if err == nil {
 				break
 			} else {
@@ -141,13 +143,13 @@ func newOgomon(exeName string, notFoundChan chan bool, cancelChan chan bool, app
 	go monitorProcess(proc, cancelChan, appendFile)
 }
 
-func ogomonControl(exeName string) {
+func ogomonControl(exeName string, pid int) {
 	dieSignalChan := make(chan os.Signal)
 	notFoundChan := make(chan bool)
 	signal.Notify(dieSignalChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
 	cancelChan := make(chan bool)
 	controlWg.Add(1)
-	newOgomon(exeName, notFoundChan, cancelChan, false)
+	newOgomon(exeName, pid, notFoundChan, cancelChan, false)
 	LOOP:
 	for {
 		select {
@@ -160,7 +162,7 @@ func ogomonControl(exeName string) {
 			break LOOP
 		case <- notFoundChan:
 			cancelChan <- true
-			newOgomon(exeName, notFoundChan, cancelChan, true)
+			newOgomon(exeName, pid, notFoundChan, cancelChan, true)
 			
 		}
 	}
@@ -171,7 +173,11 @@ var monitorCmd = &cobra.Command{
 	Short: "memory and disk",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		jww.INFO.Println("Monitor Starting")
-		ogomonControl(executableName)
+		if pid == -1 && executableName == "" {
+			jww.ERROR.Println("NO PID AND EXE")
+			os.Exit(1)
+		}
+		ogomonControl(executableName, pid)
 		return nil
 	},
 }
@@ -180,5 +186,7 @@ func init() {
 	monitorCmd.Flags().StringVarP(&deviceName, "device-name", "d", "", "Interface Name")
 	monitorCmd.Flags().IntVarP(&srcPort, "src-port", "s", 0, "Set Source Port")
 	monitorCmd.Flags().IntVarP(&destPort, "dest-port", "t", 0, "Set Destination Port")
+	monitorCmd.Flags().StringVarP(&executableName, "executable", "e", "", "Name to trace")
+	monitorCmd.Flags().IntVarP(&pid, "pid", "p", -1, "PID to trace")
 	rootCmd.AddCommand(monitorCmd)
 }
