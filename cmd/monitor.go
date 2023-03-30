@@ -92,9 +92,10 @@ func (m Monitor) Start(appendFile bool) error {
 
 	<-m.cancelChan
 	
-	cpuMemCommand.Process.Signal(syscall.SIGTERM)
-	sendCommand.Process.Signal(syscall.SIGTERM)
-	cudaMemCommand.Process.Signal(syscall.SIGTERM)
+	cpuMemCommand.Process.Kill()
+	sendCommand.Process.Kill()
+	cudaMemCommand.Process.Kill()
+	kcacheCommand.Process.Kill()
 
 	for _, t := range tickers {
 		t.Stop()
@@ -117,17 +118,22 @@ func monitorProcess(proc procfs.Proc, cancelChan chan bool, appendFile bool) err
 
 func newOgomon(exeName string, pid int, notFoundChan chan bool, cancelChan chan bool, appendFile bool) {
 	proc, err := pkg.GetTargetProc(exeName, pid)
+	found := false
 	if err != nil {
+		found = false
 		for c := 0; c < 3; c++ {
 			proc, err = pkg.GetTargetProc(exeName, pid)
 			if err == nil {
+				found = true
 				break
 			} else {
 				jww.ERROR.Println(err)
 				time.Sleep(1 * time.Second)
 			}
 		}
-		os.Exit(1)
+		if !found {
+			os.Exit(1)
+		}
 	}
 	go func(process procfs.Proc) {
 		var errTarget *os.PathError
@@ -173,7 +179,7 @@ var monitorCmd = &cobra.Command{
 	Short: "memory and disk",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		jww.INFO.Println("Monitor Starting")
-		if pid == -1 && executableName == "" {
+		if pid == -1 && executableName == "NOTSET" {
 			jww.ERROR.Println("NO PID AND EXE")
 			os.Exit(1)
 		}
@@ -186,7 +192,7 @@ func init() {
 	monitorCmd.Flags().StringVarP(&deviceName, "device-name", "d", "", "Interface Name")
 	monitorCmd.Flags().IntVarP(&srcPort, "src-port", "s", 0, "Set Source Port")
 	monitorCmd.Flags().IntVarP(&destPort, "dest-port", "t", 0, "Set Destination Port")
-	monitorCmd.Flags().StringVarP(&executableName, "executable", "e", "", "Name to trace")
+	monitorCmd.Flags().StringVarP(&executableName, "executable", "e", "NOTSET", "Name to trace")
 	monitorCmd.Flags().IntVarP(&pid, "pid", "p", -1, "PID to trace")
 	rootCmd.AddCommand(monitorCmd)
 }

@@ -18,7 +18,6 @@ func GetTargetProc(name string, pid int) (procfs.Proc, error) {
 		var proc procfs.Proc
 		proc, err := procfs.NewProc(pid)
 		if err != nil {
-			jww.ERROR.Println(err)
 			return proc, err
 		}
 		return proc, nil
