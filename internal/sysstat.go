@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	SYS_STAT_STEP        = 100
+	SYS_STAT_STEP        = 50
 	SYS_STAT_TICKER_TIME = time.Microsecond * SYS_STAT_STEP
 )
 
