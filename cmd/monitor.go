@@ -104,6 +104,7 @@ func (m Monitor) Start(appendFile bool) error {
 		t.Stop()
 	}
 	packetCaptureTracer.TearDown()
+	fmt.Println("FINISHED")
 	for i := 0; i < stopCount; i++ {
 		stop <- true
 	}
