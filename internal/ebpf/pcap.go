@@ -63,7 +63,7 @@ func (tracer PacketCaptureTracer) Start(stop chan bool) {
 			break
 		} else if err != nil {
 			jww.ERROR.Println("Error:", err)
-			continue
+			break
 		}
 		if tcpLayer := packet.Layer(layers.LayerTypeTCP); tcpLayer != nil {
 			transport := packet.TransportLayer().TransportFlow()

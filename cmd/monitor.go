@@ -43,7 +43,7 @@ func (m Monitor) Start(appendFile bool) error {
 	stopCount := 0
 
 
-	// packetCaptureTracer, err := ebpf.NewPacketCaptureTracer(deviceName, appendFile)
+	packetCaptureTracer, err := ebpf.NewPacketCaptureTracer(deviceName, appendFile)
 	socketTracer, err := ebpf.NewFilterSocketTracer(deviceName, srcPort, destPort, appendFile)
 	if err != nil {
 		jww.ERROR.Fatalln(err)
@@ -62,7 +62,7 @@ func (m Monitor) Start(appendFile bool) error {
 
 	var tickers []*time.Ticker
 
-	// packetCaptureTracer.Start(stop)
+	packetCaptureTracer.Start(stop)
 
 	for idx, _ := range tracers {
 		stopCount++
