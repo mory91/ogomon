@@ -33,6 +33,16 @@ func GetMonoTime() uint64 {
 	return uint64(ts.Sec)*NANOSECSINSEC + uint64(ts.Nsec)
 }
 
+
 func GetBootTime() uint64 {
+	var ts syscall.Timespec
+	_, _, err := syscall.Syscall(syscall.SYS_CLOCK_GETTIME, unix.CLOCK_BOOTTIME, uintptr(unsafe.Pointer(&ts)), 0)
+	if err != 0 {
+		jww.INFO.Println(err)
+	}
+	return uint64(ts.Sec)*NANOSECSINSEC + uint64(ts.Nsec)
+}
+
+func GetBootTimeC() uint64 {
 	return uint64(C.get_nsecs())
 }

@@ -6,29 +6,31 @@ import (
 	"ogomon/pkg"
 	"os"
 	"time"
+	"io"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pfring"
+	jww "github.com/spf13/jwalterweatherman"
 )
 
 type PacketCaptureTracer struct {
-	ring pfring.Ring
-	wirter *bufio.Writer
+	ring *pfring.Ring
+	writer *bufio.Writer
 	traceFile    *os.File
 }
 
 func NewPacketCaptureTracer(deviceName string, appendFile bool) (PacketCaptureTracer, error) {
-	ring, err := pfring.newring(deviceName, 56, pfring.flagpromisc)
+	ring, err := pfring.NewRing(deviceName, 56, pfring.FlagPromisc)
 	if err != nil {
 		if err != nil {
 			return PacketCaptureTracer{}, err
 		}
-	} else if err := ring.setsocketmode(pfring.readonly); err != nil {
+	} else if err := ring.SetSocketMode(pfring.ReadOnly); err != nil {
 		if err != nil {
 			return PacketCaptureTracer{}, err
 		}
-	} else if err := ring.enable(); err != nil {
+	} else if err := ring.Enable(); err != nil {
 		if err != nil {
 			return PacketCaptureTracer{}, err
 		}
@@ -40,7 +42,7 @@ func NewPacketCaptureTracer(deviceName string, appendFile bool) (PacketCaptureTr
 		l, _ = os.OpenFile("records/packets", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	}
 	writer := bufio.NewWriter(l)
-	return PacketCaptureTracer{ring: ring, wirter: writer, traceFile: l}, nil
+	return PacketCaptureTracer{ring: ring, writer: writer, traceFile: l}, nil
 }
 
 func (tracer PacketCaptureTracer) TearDown() {
@@ -54,7 +56,15 @@ func (tracer PacketCaptureTracer) GetTickerTime() time.Duration {
 
 func (tracer PacketCaptureTracer) Start(stop chan bool) {
 	packetSource := gopacket.NewPacketSource(tracer.ring, layers.LinkTypeEthernet)
-	for packet := range packetSource.Packets() {
+	for {
+		packet, err := packetSource.NextPacket()
+		if err == io.EOF {
+			jww.ERROR.Println("END")
+			break
+		} else if err != nil {
+			jww.ERROR.Println("Error:", err)
+			continue
+		}
 		if tcpLayer := packet.Layer(layers.LayerTypeTCP); tcpLayer != nil {
 			transport := packet.TransportLayer().TransportFlow()
 			network := packet.NetworkLayer().NetworkFlow()
@@ -63,9 +73,9 @@ func (tracer PacketCaptureTracer) Start(stop chan bool) {
 			src_port := transport.Src().String()
 			dest_port := transport.Dst().String()
 			length := packet.Metadata().Length
-			currentTime := pkg.GetBootTime()
+			currentTime := pkg.GetMonoTime()
 			data := fmt.Sprintf(
-				"%d,%s,%s,%s,%s,%d\n",
+				"%d,%d,%s,%s,%s,%s\n",
 				currentTime,
 				length,
 				src_ip, 
