@@ -33,11 +33,11 @@ static __always_inline int parse_tcphdr(struct iphdr *iphdr_l3, struct tcphdr *t
 {
 
 	if (bpf_skb_load_bytes(skb, sizeof(struct ethhdr) + sizeof(struct iphdr), tcphdr_l4, sizeof(struct tcphdr)) < 0) {
-		return -1;
+	    return -1;
 	}
 	if (bpf_skb_load_bytes(skb, sizeof(struct ethhdr), iphdr_l3, sizeof(struct iphdr)) < 0) {
-        return -1;
-    }
+	    return -1;
+	}
 	return 1;
 }
 
@@ -67,16 +67,16 @@ struct bpf_map_def SEC("maps") port_holder = {
 
 static __always_inline int create_ev(struct tcphdr *tcphdr_l4, struct iphdr *iphdr_l3, struct event* ev)
 {
-	__u64 target_source = 0, target_dest = 0;
-	target_source = tcphdr_l4->source;
-	target_dest = tcphdr_l4->dest;
+    __u64 target_source = 0, target_dest = 0;
+    target_source = tcphdr_l4->source;
+    target_dest = tcphdr_l4->dest;
     __u64 saddr = ((unsigned char*)(&(iphdr_l3->saddr)))[3];
     __u64 daddr = ((unsigned char*)(&(iphdr_l3->daddr)))[3];
     ev->sport = bpf_ntohs(target_source);
     ev->dport = bpf_ntohs(target_dest);
     ev->saddr = saddr;
     ev->daddr = daddr;
-	return 1;
+    return 1;
 }
 
 SEC("socket")
@@ -87,22 +87,22 @@ int report_packet_size(struct __sk_buff *skb)
     __u64 *src_ip = bpf_map_lookup_elem(&port_holder, &src_key);
     __u64 *dest_ip = bpf_map_lookup_elem(&port_holder, &dest_key);
 
-	__u64 val = skb->len;
-	__u64 key = bpf_ktime_get_ns();
+    __u64 val = skb->len;
+    __u64 key = bpf_ktime_get_ns();
 	
     int proto_type;
-   	struct iphdr iphdr_l3;
-   	struct tcphdr tcphdr_l4;
-	struct event ev = {.len = val};
-	
-	// NO UDP SUPPORT FOR NOW
-	if (parse_tcphdr(&iphdr_l3, &tcphdr_l4, skb)) {
-		if (create_ev(&tcphdr_l4, &iphdr_l3, &ev) > 0) {
-			bpf_map_update_elem(&events, &key, &ev, BPF_ANY);
-		}
-	}
+    struct iphdr iphdr_l3;
+    struct tcphdr tcphdr_l4;
+    struct event ev = {.len = val};
+    
+    // NO UDP SUPPORT FOR NOW
+    if (parse_tcphdr(&iphdr_l3, &tcphdr_l4, skb)) {
+	    if (create_ev(&tcphdr_l4, &iphdr_l3, &ev) > 0) {
+		    bpf_map_update_elem(&events, &key, &ev, BPF_ANY);
+	    }
+    }
 
-	return 0;
+    return 0;
 }
 
 char _license[] SEC("license") = "GPL";

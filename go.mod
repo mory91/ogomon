@@ -12,6 +12,7 @@ require (
 )
 
 require (
+	github.com/google/gopacket v1.1.19 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect

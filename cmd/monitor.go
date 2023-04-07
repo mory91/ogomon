@@ -43,6 +43,7 @@ func (m Monitor) Start(appendFile bool) error {
 	stopCount := 0
 
 
+	packetCaptureTracer, err := ebpf.NewPacketCaptureTracer(deviceName, appendFile)
 	socketTracer, err := ebpf.NewFilterSocketTracer(deviceName, srcPort, destPort, appendFile)
 	if err != nil {
 		jww.ERROR.Fatalln(err)
@@ -60,6 +61,8 @@ func (m Monitor) Start(appendFile bool) error {
 	tracers := []internal.Tracer{diskWriteTracer, diskReadTracer, socketTracer, residentMemoryTracer, memoryTracer, dataVirtualMemoryTracer, CSTimeTrace, CUTimeTrace, STimeTracer, UTimeTracer}
 
 	var tickers []*time.Ticker
+
+	packetCaptureTracer.Start(stop)
 
 	for idx, _ := range tracers {
 		stopCount++
