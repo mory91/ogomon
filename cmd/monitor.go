@@ -44,7 +44,7 @@ func (m Monitor) Start(appendFile bool) error {
 
 
 	packetCaptureTracer, err := ebpf.NewPacketCaptureTracer(deviceName, appendFile)
-	socketTracer, err := ebpf.NewFilterSocketTracer(deviceName, srcPort, destPort, appendFile)
+	// socketTracer, err := ebpf.NewFilterSocketTracer(deviceName, srcPort, destPort, appendFile)
 	if err != nil {
 		jww.ERROR.Fatalln(err)
 	}
@@ -58,7 +58,7 @@ func (m Monitor) Start(appendFile bool) error {
 	STimeTracer, err := internal.NewSTimeTracer(&m.proc, appendFile)
 	UTimeTracer, err := internal.NewUTimeTracer(&m.proc, appendFile)
 
-	tracers := []internal.Tracer{diskWriteTracer, diskReadTracer, socketTracer, residentMemoryTracer, memoryTracer, dataVirtualMemoryTracer, CSTimeTrace, CUTimeTrace, STimeTracer, UTimeTracer}
+	tracers := []internal.Tracer{diskWriteTracer, diskReadTracer, residentMemoryTracer, memoryTracer, dataVirtualMemoryTracer, CSTimeTrace, CUTimeTrace, STimeTracer, UTimeTracer}
 
 	var tickers []*time.Ticker
 
