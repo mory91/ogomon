@@ -62,7 +62,7 @@ func (m Monitor) Start(appendFile bool) error {
 
 	var tickers []*time.Ticker
 
-	packetCaptureTracer.Start(stop)
+	go packetCaptureTracer.Start(stop)
 
 	for idx, _ := range tracers {
 		stopCount++
@@ -103,6 +103,7 @@ func (m Monitor) Start(appendFile bool) error {
 	for _, t := range tickers {
 		t.Stop()
 	}
+	packetCaptureTracer.TearDown()
 	for i := 0; i < stopCount; i++ {
 		stop <- true
 	}
