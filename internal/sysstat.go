@@ -181,12 +181,10 @@ func tickSTime(t time.Time, tracer *SystemTracer) {
 }
 
 func tickUTime(t time.Time, tracer *SystemTracer) {
-	t1 := time.Now()
 	stat, _ := tracer.proc.Stat()
 	recordedUTime := uint64(stat.UTime)
 	logData := fmt.Sprintf("%d,%d\n", GetEventTime(t), recordedUTime)
 	tracer.writer.WriteString(logData)
-	fmt.Println(time.Since(t1).Milliseconds())
 }
 
 func (systemTracer SystemTracer) Start(ticker time.Ticker, stop chan bool) {
