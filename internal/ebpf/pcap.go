@@ -47,6 +47,7 @@ func NewPacketCaptureTracer(deviceName string, appendFile bool) (PacketCaptureTr
 
 func (tracer PacketCaptureTracer) TearDown() {
 	tracer.ring.Close()
+	tracer.writer.Flush()
 	tracer.traceFile.Close()
 }
 
