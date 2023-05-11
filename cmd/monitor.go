@@ -62,22 +62,15 @@ func (m Monitor) Start(appendFile bool) error {
 
 	tracers := []internal.Tracer{diskWriteTracer, diskReadTracer, residentMemoryTracer, memoryTracer, dataVirtualMemoryTracer, CSTimeTrace, CUTimeTrace, STimeTracer, UTimeTracer, TCPTXTracer}
 
-	var tickers []*time.Ticker
-
 	go packetCaptureTracer.Start(stop)
 
 	for idx, _ := range tracers {
 		stopCount++
 		wg.Add(1)
-		tmpTracer := idx
-
-		ticker := time.NewTicker(tracers[tmpTracer].GetTickerTime())
-		tickers = append(tickers, ticker)
-
-		go func() {
+		go func(tracerIdx int) {
 			defer wg.Done()
-			tracers[tmpTracer].Start(*ticker, stop)
-		}()
+			tracers[tracerIdx].Start()
+		}(idx)
 	}
 
 	// external commands section
@@ -102,11 +95,10 @@ func (m Monitor) Start(appendFile bool) error {
 	cudaMemCommand.Process.Kill()
 	kcacheCommand.Process.Kill()
 
-	for _, t := range tickers {
+	for _, t := range tracers {
 		t.Stop()
 	}
 	packetCaptureTracer.TearDown()
-
 	jww.INFO.Println("TEAR DOWN CALLED FOR PACKET TRACE")
 
 	for i := 0; i < stopCount; i++ {
