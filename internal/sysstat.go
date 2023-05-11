@@ -24,10 +24,10 @@ type SystemTracer struct {
 	tickerTime   time.Duration
 	logFile      *os.File
 	writer       *bufio.Writer
-	isRunning     bool
+	isStop       bool
 }
 
-func NewNetTCPTracer(fs *procfs.FS, appendFile bool) (SystemTracer, error) {
+func NewNetTCPTracer(fs *procfs.FS, appendFile bool) (*SystemTracer, error) {
 	var logFile *os.File
 	if !appendFile {
 		logFile, _ = os.Create("records/TXQ")
@@ -38,7 +38,7 @@ func NewNetTCPTracer(fs *procfs.FS, appendFile bool) (SystemTracer, error) {
 	return &SystemTracer{fs: fs, ticker: tickTXQueue, writer: writer, tickerTime: SYS_STAT_TICKER_TIME, logFile: logFile}, nil
 }
 
-func NewDiskReadTracer(proc *procfs.Proc, appendFile bool) (SystemTracer, error) {
+func NewDiskReadTracer(proc *procfs.Proc, appendFile bool) (*SystemTracer, error) {
 	var logFile *os.File
 	if !appendFile {
 		logFile, _ = os.Create("records/disk_read")
@@ -49,7 +49,7 @@ func NewDiskReadTracer(proc *procfs.Proc, appendFile bool) (SystemTracer, error)
 	return &SystemTracer{proc: proc, ticker: tickDiskRead, writer: writer, tickerTime: SYS_STAT_TICKER_TIME, logFile: logFile}, nil
 }
 
-func NewDiskWriteTracer(proc *procfs.Proc, appendFile bool) (SystemTracer, error) {
+func NewDiskWriteTracer(proc *procfs.Proc, appendFile bool) (*SystemTracer, error) {
 	var logFile *os.File
 	if !appendFile {
 		logFile, _ = os.Create("records/disk_write")
@@ -60,7 +60,7 @@ func NewDiskWriteTracer(proc *procfs.Proc, appendFile bool) (SystemTracer, error
 	return &SystemTracer{proc: proc, logFile: logFile, ticker: tickDiskWrite, writer: writer, tickerTime: SYS_STAT_TICKER_TIME}, nil
 }
 
-func NewMemoryTracer(proc *procfs.Proc, appendFile bool) (SystemTracer, error) {
+func NewMemoryTracer(proc *procfs.Proc, appendFile bool) (*SystemTracer, error) {
 	var logFile *os.File
 	if !appendFile {
 		logFile, _ = os.Create("records/memory")
@@ -71,7 +71,7 @@ func NewMemoryTracer(proc *procfs.Proc, appendFile bool) (SystemTracer, error) {
 	return &SystemTracer{proc: proc, logFile: logFile, ticker: tickVirtualMemory, writer: writer, tickerTime: SYS_STAT_TICKER_TIME}, nil
 }
 
-func NewResidentMemoryTracer(proc *procfs.Proc, appendFile bool) (SystemTracer, error) {
+func NewResidentMemoryTracer(proc *procfs.Proc, appendFile bool) (*SystemTracer, error) {
 	var logFile *os.File
 	if !appendFile {
 		logFile, _ = os.Create("records/rss_memory")
@@ -82,7 +82,7 @@ func NewResidentMemoryTracer(proc *procfs.Proc, appendFile bool) (SystemTracer, 
 	return &SystemTracer{proc: proc, logFile: logFile, ticker: tickResidentMemory, writer: writer, tickerTime: SYS_STAT_TICKER_TIME}, nil
 }
 
-func NewDataVirtualMemoryTracer(proc *procfs.Proc, appendFile bool) (SystemTracer, error) {
+func NewDataVirtualMemoryTracer(proc *procfs.Proc, appendFile bool) (*SystemTracer, error) {
 	var logFile *os.File
 	if !appendFile {
 		logFile, _ = os.Create("records/data_memory")
@@ -93,7 +93,7 @@ func NewDataVirtualMemoryTracer(proc *procfs.Proc, appendFile bool) (SystemTrace
 	return &SystemTracer{proc: proc, logFile: logFile, ticker: tickDataVirtualMemory, writer: writer, tickerTime: SYS_STAT_TICKER_TIME}, nil
 }
 
-func NewSTimeTracer(proc *procfs.Proc, appendFile bool) (SystemTracer, error) {
+func NewSTimeTracer(proc *procfs.Proc, appendFile bool) (*SystemTracer, error) {
 	var logFile *os.File
 	if !appendFile {
 		logFile, _ = os.Create("records/s_time")
@@ -104,7 +104,7 @@ func NewSTimeTracer(proc *procfs.Proc, appendFile bool) (SystemTracer, error) {
 	return &SystemTracer{proc: proc, logFile: logFile, ticker: tickSTime, writer: writer, tickerTime: SYS_STAT_TICKER_TIME}, nil
 }
 
-func NewUTimeTracer(proc *procfs.Proc, appendFile bool) (SystemTracer, error) {
+func NewUTimeTracer(proc *procfs.Proc, appendFile bool) (*SystemTracer, error) {
 	var logFile *os.File
 	if !appendFile {
 		logFile, _ = os.Create("records/u_time")
@@ -115,7 +115,7 @@ func NewUTimeTracer(proc *procfs.Proc, appendFile bool) (SystemTracer, error) {
 	return &SystemTracer{proc: proc, logFile: logFile, ticker: tickUTime, writer: writer, tickerTime: SYS_STAT_TICKER_TIME}, nil
 }
 
-func NewCSTimeTracer(proc *procfs.Proc, appendFile bool) (SystemTracer, error) {
+func NewCSTimeTracer(proc *procfs.Proc, appendFile bool) (*SystemTracer, error) {
 	var logFile *os.File
 	if !appendFile {
 		logFile, _ = os.Create("records/cs_time")
@@ -126,7 +126,7 @@ func NewCSTimeTracer(proc *procfs.Proc, appendFile bool) (SystemTracer, error) {
 	return &SystemTracer{proc: proc, logFile: logFile, ticker: tickCSTime, writer: writer, tickerTime: SYS_STAT_TICKER_TIME}, nil
 }
 
-func NewCUTimeTracer(proc *procfs.Proc, appendFile bool) (SystemTracer, error) {
+func NewCUTimeTracer(proc *procfs.Proc, appendFile bool) (*SystemTracer, error) {
 	var logFile *os.File
 	if !appendFile {
 		logFile, _ = os.Create("records/cu_time")
@@ -207,9 +207,9 @@ func tickTXQueue(tracer *SystemTracer) {
 	tracer.writer.WriteString(logData)
 }
 
-func (systemTracer SystemTracer) Start() {
+func (systemTracer *SystemTracer) Start() {
 	for {
-		if systemTracer.isRunning {
+		if !systemTracer.isStop {
 			systemTracer.ticker(&systemTracer)
 		} else {
 			systemTracer.TearDown()
@@ -223,11 +223,11 @@ func (systemTracer SystemTracer) GetTickerTime() time.Duration {
 	return systemTracer.tickerTime
 }
 
-func (systemTracer SystemTracer) TearDown() {
+func (systemTracer *SystemTracer) TearDown() {
 	systemTracer.writer.Flush()
 	systemTracer.logFile.Close()
 }
 
 func (systemTracer *SystemTracer) Stop() {
-	systemTracer.isRunning = false
+	systemTracer.isStop = true
 }

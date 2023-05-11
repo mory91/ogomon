@@ -1,5 +1,5 @@
 .PHONY: build
 build:
-	go generate ./...
-	go build -o build/ogomon main.go
+	go1.18.2 generate ./...
+	go1.18.2 build -o build/ogomon main.go
 

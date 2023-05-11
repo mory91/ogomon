@@ -40,10 +40,6 @@ func (m Monitor) Start(appendFile bool) error {
 	jww.INFO.Printf("PID: %d", stat.PID)
 	jww.INFO.Printf("Executable Name: %s", stat.Comm)
 
-	stop := make(chan bool)
-	stopCount := 0
-
-
 	packetCaptureTracer, err := ebpf.NewPacketCaptureTracer(deviceName, appendFile)
 	// socketTracer, err := ebpf.NewFilterSocketTracer(deviceName, srcPort, destPort, appendFile)
 	if err != nil {
@@ -62,10 +58,9 @@ func (m Monitor) Start(appendFile bool) error {
 
 	tracers := []internal.Tracer{diskWriteTracer, diskReadTracer, residentMemoryTracer, memoryTracer, dataVirtualMemoryTracer, CSTimeTrace, CUTimeTrace, STimeTracer, UTimeTracer, TCPTXTracer}
 
-	go packetCaptureTracer.Start(stop)
+	go packetCaptureTracer.Start()
 
 	for idx, _ := range tracers {
-		stopCount++
 		wg.Add(1)
 		go func(tracerIdx int) {
 			defer wg.Done()
@@ -95,9 +90,6 @@ func (m Monitor) Start(appendFile bool) error {
 	cudaMemCommand.Process.Kill()
 	kcacheCommand.Process.Kill()
 
-	for _, t := range tracers {
-		t.Stop()
-	}
 	packetCaptureTracer.TearDown()
 	jww.INFO.Println("TEAR DOWN CALLED FOR PACKET TRACE")
 

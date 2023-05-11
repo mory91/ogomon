@@ -54,7 +54,7 @@ func (tracer PacketCaptureTracer) GetTickerTime() time.Duration {
 	return time.Second
 }
 
-func (tracer PacketCaptureTracer) Start(stop chan bool) {
+func (tracer PacketCaptureTracer) Start() {
 	packetSource := gopacket.NewPacketSource(tracer.ring, layers.LinkTypeEthernet)
 	for {
 		packet, err := packetSource.NextPacket()
