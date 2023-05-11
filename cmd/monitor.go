@@ -155,7 +155,7 @@ func newOgomon(exeName string, pid int, notFoundChan chan bool, cancelChan chan 
 			}
 		}
 	}(proc)
-	go monitorProcess(proc, cancelChan, appendFile)
+	go monitorProcess(proc, fs, cancelChan, appendFile)
 }
 
 func ogomonControl(exeName string, pid int) {
