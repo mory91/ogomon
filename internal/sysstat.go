@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	SYS_STAT_STEP        = 100
+	SYS_STAT_STEP        = 250
 	SYS_STAT_TICKER_TIME = time.Microsecond * SYS_STAT_STEP
 )
 
@@ -209,12 +209,14 @@ func tickTXQueue(tracer *SystemTracer) {
 
 func (systemTracer *SystemTracer) Start() {
 	for {
+		t1 := time.Now()
 		if !systemTracer.isStop {
 			systemTracer.ticker(systemTracer)
 		} else {
 			systemTracer.TearDown()
 			break
 		}
+		time.Sleep((SYS_STAT_STEP - time.Since(t1).Microseconds()) * time.Microsecond)
 	}
 }
 
