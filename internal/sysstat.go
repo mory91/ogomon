@@ -34,7 +34,7 @@ func NewNetTCPTracer(fs *procfs.FS, appendFile bool) (*SystemTracer, error) {
 	} else {
 		logFile, _ = os.OpenFile("records/TXQ", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	}
-	writer := bufio.NewWriterSize(logFile, 8192)
+	writer := bufio.NewWriterSize(logFile, 16384)
 	return &SystemTracer{fs: fs, ticker: tickTXQueue, writer: writer, tickerTime: SYS_STAT_TICKER_TIME, logFile: logFile}, nil
 }
 
@@ -138,72 +138,82 @@ func NewCUTimeTracer(proc *procfs.Proc, appendFile bool) (*SystemTracer, error) 
 }
 
 func tickDiskRead(tracer *SystemTracer) {
+	evTime := GetEventTime()
 	stat, _ := tracer.proc.IO()
 	readBytes := stat.ReadBytes
-	logData := fmt.Sprintf("%d,%d\n", GetEventTime(), readBytes)
+	logData := fmt.Sprintf("%d,%d\n", evTime, readBytes)
 	tracer.writer.WriteString(logData)
 }
 
 func tickDiskWrite(tracer *SystemTracer) {
+	evTime := GetEventTime()
 	stat, _ := tracer.proc.IO()
 	writeBytes := stat.WriteBytes
-	logData := fmt.Sprintf("%d,%d\n", GetEventTime(), writeBytes)
+	logData := fmt.Sprintf("%d,%d\n", evTime, writeBytes)
 	tracer.writer.WriteString(logData)
 }
 
 func tickVirtualMemory(tracer *SystemTracer) {
+	evTime := GetEventTime()
 	stat, _ := tracer.proc.Stat()
 	allocatedVm := uint64(stat.VirtualMemory())
-	logData := fmt.Sprintf("%d,%d\n", GetEventTime(), allocatedVm)
+	logData := fmt.Sprintf("%d,%d\n", evTime, allocatedVm)
 	tracer.writer.WriteString(logData)
 }
 
 func tickResidentMemory(tracer *SystemTracer) {
+	evTime := GetEventTime()
 	stat, _ := tracer.proc.Stat()
 	allocatedRss := uint64(stat.ResidentMemory())
-	logData := fmt.Sprintf("%d,%d\n", GetEventTime(), allocatedRss)
+	logData := fmt.Sprintf("%d,%d\n", evTime, allocatedRss)
 	tracer.writer.WriteString(logData)
 }
 
 func tickDataVirtualMemory(tracer *SystemTracer) {
+	evTime := GetEventTime()
 	status, _ := tracer.proc.NewStatus()
 	allocatedVmData := uint64(status.VmData)
-	logData := fmt.Sprintf("%d,%d\n", GetEventTime(), allocatedVmData)
+	logData := fmt.Sprintf("%d,%d\n", evTime, allocatedVmData)
 	tracer.writer.WriteString(logData)
 }
 
 func tickCSTime(tracer *SystemTracer) {
+	evTime := GetEventTime()
 	stat, _ := tracer.proc.Stat()
 	recordedCSTime := uint64(stat.CSTime)
-	logData := fmt.Sprintf("%d,%d\n", GetEventTime(), recordedCSTime)
+	logData := fmt.Sprintf("%d,%d\n", evTime, recordedCSTime)
 	tracer.writer.WriteString(logData)
 }
 
 func tickCUTime(tracer *SystemTracer) {
+	evTime := GetEventTime()
 	stat, _ := tracer.proc.Stat()
 	recordedCUTime := uint64(stat.CUTime)
-	logData := fmt.Sprintf("%d,%d\n", GetEventTime(), recordedCUTime)
+	logData := fmt.Sprintf("%d,%d\n", evTime, recordedCUTime)
 	tracer.writer.WriteString(logData)
 }
 
 func tickSTime(tracer *SystemTracer) {
+	evTime := GetEventTime()
 	stat, _ := tracer.proc.Stat()
 	recordedSTime := uint64(stat.STime)
-	logData := fmt.Sprintf("%d,%d\n", GetEventTime(), recordedSTime)
+	logData := fmt.Sprintf("%d,%d\n", evTime, recordedSTime)
 	tracer.writer.WriteString(logData)
 }
 
 func tickUTime(tracer *SystemTracer) {
+	evTime := GetEventTime()
 	stat, _ := tracer.proc.Stat()
 	recordedUTime := uint64(stat.UTime)
-	logData := fmt.Sprintf("%d,%d\n", GetEventTime(), recordedUTime)
+	logData := fmt.Sprintf("%d,%d\n", evTime, recordedUTime)
 	tracer.writer.WriteString(logData)
 }
 
 func tickTXQueue(tracer *SystemTracer) {
+	evTime := GetEventTime()
 	summary, _ := tracer.fs.NetTCPSummary()
 	TXQLen := uint64(summary.TxQueueLength)
-	logData := fmt.Sprintf("%d,%d\n", GetEventTime(), TXQLen)
+	logData := fmt.Sprintf("%d,%d\n", evTime, TXQLen)
 	tracer.writer.WriteString(logData)
 }
 
