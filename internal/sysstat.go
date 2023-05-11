@@ -137,91 +137,101 @@ func NewCUTimeTracer(proc *procfs.Proc, appendFile bool) (*SystemTracer, error) 
 	return &SystemTracer{proc: proc, logFile: logFile, ticker: tickCUTime, writer: writer, tickerTime: SYS_STAT_TICKER_TIME}, nil
 }
 
-func tickDiskRead(tracer *SystemTracer) {
+func tickDiskRead(tracer *SystemTracer) int64 {
 	evTime := GetEventTime()
 	stat, _ := tracer.proc.IO()
 	readBytes := stat.ReadBytes
 	logData := fmt.Sprintf("%d,%d\n", evTime, readBytes)
 	tracer.writer.WriteString(logData)
+	return evTime
 }
 
-func tickDiskWrite(tracer *SystemTracer) {
+func tickDiskWrite(tracer *SystemTracer) int64 {
 	evTime := GetEventTime()
 	stat, _ := tracer.proc.IO()
 	writeBytes := stat.WriteBytes
 	logData := fmt.Sprintf("%d,%d\n", evTime, writeBytes)
 	tracer.writer.WriteString(logData)
+	return evTime
 }
 
-func tickVirtualMemory(tracer *SystemTracer) {
+func tickVirtualMemory(tracer *SystemTracer) int64 {
 	evTime := GetEventTime()
 	stat, _ := tracer.proc.Stat()
 	allocatedVm := uint64(stat.VirtualMemory())
 	logData := fmt.Sprintf("%d,%d\n", evTime, allocatedVm)
 	tracer.writer.WriteString(logData)
+	return evTime
 }
 
-func tickResidentMemory(tracer *SystemTracer) {
+func tickResidentMemory(tracer *SystemTracer) int64 {
 	evTime := GetEventTime()
 	stat, _ := tracer.proc.Stat()
 	allocatedRss := uint64(stat.ResidentMemory())
 	logData := fmt.Sprintf("%d,%d\n", evTime, allocatedRss)
 	tracer.writer.WriteString(logData)
+	return evTime
 }
 
-func tickDataVirtualMemory(tracer *SystemTracer) {
+func tickDataVirtualMemory(tracer *SystemTracer) int64 {
 	evTime := GetEventTime()
 	status, _ := tracer.proc.NewStatus()
 	allocatedVmData := uint64(status.VmData)
 	logData := fmt.Sprintf("%d,%d\n", evTime, allocatedVmData)
 	tracer.writer.WriteString(logData)
+	return evTime
 }
 
-func tickCSTime(tracer *SystemTracer) {
+func tickCSTime(tracer *SystemTracer) int64 {
 	evTime := GetEventTime()
 	stat, _ := tracer.proc.Stat()
 	recordedCSTime := uint64(stat.CSTime)
 	logData := fmt.Sprintf("%d,%d\n", evTime, recordedCSTime)
 	tracer.writer.WriteString(logData)
+	return evTime
 }
 
-func tickCUTime(tracer *SystemTracer) {
+func tickCUTime(tracer *SystemTracer) int64 {
 	evTime := GetEventTime()
 	stat, _ := tracer.proc.Stat()
 	recordedCUTime := uint64(stat.CUTime)
 	logData := fmt.Sprintf("%d,%d\n", evTime, recordedCUTime)
 	tracer.writer.WriteString(logData)
+	return evTime
 }
 
-func tickSTime(tracer *SystemTracer) {
+func tickSTime(tracer *SystemTracer) int64 {
 	evTime := GetEventTime()
 	stat, _ := tracer.proc.Stat()
 	recordedSTime := uint64(stat.STime)
 	logData := fmt.Sprintf("%d,%d\n", evTime, recordedSTime)
 	tracer.writer.WriteString(logData)
+	return evTime
 }
 
-func tickUTime(tracer *SystemTracer) {
+func tickUTime(tracer *SystemTracer) int64 {
 	evTime := GetEventTime()
 	stat, _ := tracer.proc.Stat()
 	recordedUTime := uint64(stat.UTime)
 	logData := fmt.Sprintf("%d,%d\n", evTime, recordedUTime)
 	tracer.writer.WriteString(logData)
+	return evTime
 }
 
-func tickTXQueue(tracer *SystemTracer) {
+func tickTXQueue(tracer *SystemTracer) int64 {
 	evTime := GetEventTime()
 	summary, _ := tracer.fs.NetTCPSummary()
 	TXQLen := uint64(summary.TxQueueLength)
 	logData := fmt.Sprintf("%d,%d\n", evTime, TXQLen)
 	tracer.writer.WriteString(logData)
+	return evTime
 }
 
 func (systemTracer *SystemTracer) Start() {
 	for {
-		t1 := time.Now()
+		var t1 int64
 		if !systemTracer.isStop {
-			systemTracer.ticker(systemTracer)
+			t1 = systemTracer.ticker(systemTracer)
 		} else {
 			systemTracer.TearDown()
 			break
