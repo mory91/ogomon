@@ -19,10 +19,22 @@ type DataTicker func(t time.Time, tracer *SystemTracer)
 
 type SystemTracer struct {
 	proc         *procfs.Proc
+	fs           *procfs.FS
 	ticker       DataTicker
 	tickerTime   time.Duration
 	logFile      *os.File
 	writer       *bufio.Writer
+}
+
+func NewNetTCPTracer(fs *procfs.FS, appendFile bool) (SystemTracer, error) {
+	var logFile *os.File
+	if !appendFile {
+		logFile, _ = os.Create("records/TXQ")
+	} else {
+		logFile, _ = os.OpenFile("records/TXQ", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	}
+	writer := bufio.NewWriter(logFile)
+	return SystemTracer{fs: fs, ticker: tickTXQueue, writer: writer, tickerTime: SYS_STAT_TICKER_TIME, logFile: logFile}, nil
 }
 
 func NewDiskReadTracer(proc *procfs.Proc, appendFile bool) (SystemTracer, error) {
@@ -184,6 +196,13 @@ func tickUTime(t time.Time, tracer *SystemTracer) {
 	stat, _ := tracer.proc.Stat()
 	recordedUTime := uint64(stat.UTime)
 	logData := fmt.Sprintf("%d,%d\n", GetEventTime(t), recordedUTime)
+	tracer.writer.WriteString(logData)
+}
+
+func tickTXQueue(t time.Time, tracer *SystemTracer) {
+	summary, _ := tracer.fs.NetTCPSummary()
+	TXQLen := uint64(summary.TxQueueLength)
+	logData := fmt.Sprintf("%d,%d\n", GetEventTime(t), TXQLen)
 	tracer.writer.WriteString(logData)
 }
 

@@ -20,6 +20,7 @@ import (
 )
 
 type Monitor struct {
+	fs procfs.FS
 	proc procfs.Proc
 	cancelChan chan bool
 }
@@ -115,8 +116,8 @@ func (m Monitor) Start(appendFile bool) error {
 	return nil
 }
 
-func monitorProcess(proc procfs.Proc, cancelChan chan bool, appendFile bool) error {
-	m := Monitor{proc: proc, cancelChan: cancelChan}
+func monitorProcess(proc procfs.Proc, fs procfs.FS, cancelChan chan bool, appendFile bool) error {
+	m := Monitor{proc: proc, fs: fs, cancelChan: cancelChan}
 	if err := m.Start(appendFile); err != nil {
 		return err
 	}
@@ -125,6 +126,7 @@ func monitorProcess(proc procfs.Proc, cancelChan chan bool, appendFile bool) err
 
 func newOgomon(exeName string, pid int, notFoundChan chan bool, cancelChan chan bool, appendFile bool) {
 	proc, err := pkg.GetTargetProc(exeName, pid)
+	fs, err := procfs.NewDefaultFS()
 	found := false
 	if err != nil {
 		found = false
