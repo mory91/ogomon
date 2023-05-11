@@ -16,5 +16,6 @@ func init() {
 }
 
 func GetEventTime(t time.Time) uint64 {
-	return kernelLandBaseTime + (uint64(t.UnixNano()) - userLandBaseTime)
+	//return kernelLandBaseTime + (uin 64(t.UnixNano()) - userLandBaseTime)
+	return uint64(time.Now().UnixNano())
 }

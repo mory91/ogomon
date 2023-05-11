@@ -3,7 +3,6 @@ package ebpf
 import (
 	"bufio"
 	"fmt"
-	"ogomon/pkg"
 	"os"
 	"time"
 	"io"
@@ -74,7 +73,7 @@ func (tracer PacketCaptureTracer) Start(stop chan bool) {
 			src_port := transport.Src().String()
 			dest_port := transport.Dst().String()
 			length := packet.Metadata().Length
-			currentTime := pkg.GetMonoTime()
+			currentTime := packet.Metadata().Timestamp.UnixNano()
 			data := fmt.Sprintf(
 				"%d,%d,%s,%s,%s,%s\n",
 				currentTime,

@@ -3,8 +3,11 @@
 from bcc import BPF
 import argparse
 import sys
+import time
 
 from mem import get_bpf_source, attach_probes
+
+kstime = time.time_ns() - time.monotonic_ns()
 
 
 parser = argparse.ArgumentParser(
@@ -31,7 +34,7 @@ attach_probes(bpf, "cudaMemcpyAsync", name=cudart_lib3, pid=pid)
 
 def callback(ctx, data, size):
     event = bpf['events'].event(data)
-    print("%d,%d" % (event.timestamp_ns, event.size))
+    print("%d,%d" % (event.timestamp_ns + kstime, event.size))
 
 
 bpf['events'].open_ring_buffer(callback)
