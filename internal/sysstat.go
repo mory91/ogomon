@@ -215,7 +215,6 @@ func (systemTracer *SystemTracer) Start() {
 			systemTracer.TearDown()
 			break
 		}
-		time.Sleep(SYS_STAT_TICKER_TIME)
 	}
 }
 
