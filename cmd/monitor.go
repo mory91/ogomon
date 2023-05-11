@@ -58,8 +58,9 @@ func (m Monitor) Start(appendFile bool) error {
 	CUTimeTrace, err := internal.NewCUTimeTracer(&m.proc, appendFile)
 	STimeTracer, err := internal.NewSTimeTracer(&m.proc, appendFile)
 	UTimeTracer, err := internal.NewUTimeTracer(&m.proc, appendFile)
+	TCPTXTracer, err := internal.NewNetTCPTracer(&m.fs, appendFile)
 
-	tracers := []internal.Tracer{diskWriteTracer, diskReadTracer, residentMemoryTracer, memoryTracer, dataVirtualMemoryTracer, CSTimeTrace, CUTimeTrace, STimeTracer, UTimeTracer}
+	tracers := []internal.Tracer{diskWriteTracer, diskReadTracer, residentMemoryTracer, memoryTracer, dataVirtualMemoryTracer, CSTimeTrace, CUTimeTrace, STimeTracer, UTimeTracer, TCPTXTracer}
 
 	var tickers []*time.Ticker
 
