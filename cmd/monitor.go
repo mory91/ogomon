@@ -93,9 +93,6 @@ func (m Monitor) Start(appendFile bool) error {
 	packetCaptureTracer.TearDown()
 	jww.INFO.Println("TEAR DOWN CALLED FOR PACKET TRACE")
 
-	for i := 0; i < stopCount; i++ {
-		stop <- true
-	}
 	wg.Wait()
 	controlWg.Done()
 	return nil
