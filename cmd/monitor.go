@@ -90,6 +90,10 @@ func (m Monitor) Start(appendFile bool) error {
 	cudaMemCommand.Process.Kill()
 	kcacheCommand.Process.Kill()
 
+	for _, t := range tracers {
+		t.Stop()
+	}
+
 	packetCaptureTracer.TearDown()
 	jww.INFO.Println("TEAR DOWN CALLED FOR PACKET TRACE")
 
