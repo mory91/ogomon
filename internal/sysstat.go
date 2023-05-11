@@ -210,7 +210,7 @@ func tickTXQueue(tracer *SystemTracer) {
 func (systemTracer *SystemTracer) Start() {
 	for {
 		if !systemTracer.isStop {
-			systemTracer.ticker(&systemTracer)
+			systemTracer.ticker(systemTracer)
 		} else {
 			systemTracer.TearDown()
 			break
