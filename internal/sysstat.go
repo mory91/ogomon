@@ -229,9 +229,10 @@ func tickTXQueue(tracer *SystemTracer) uint64 {
 
 func (systemTracer *SystemTracer) Start() {
 	for {
-		var t1 uint64
+		//var t1 uint64
 		if !systemTracer.isStop {
-			t1 = systemTracer.ticker(systemTracer)
+			//t1 = systemTracer.ticker(systemTracer)
+			systemTracer.ticker(systemTracer)
 		} else {
 			systemTracer.TearDown()
 			break
