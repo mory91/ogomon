@@ -15,7 +15,7 @@ const (
 )
 
 
-type DataTicker func(tracer *SystemTracer) int64
+type DataTicker func(tracer *SystemTracer) uint64
 
 type SystemTracer struct {
 	proc         *procfs.Proc
@@ -137,7 +137,7 @@ func NewCUTimeTracer(proc *procfs.Proc, appendFile bool) (*SystemTracer, error) 
 	return &SystemTracer{proc: proc, logFile: logFile, ticker: tickCUTime, writer: writer, tickerTime: SYS_STAT_TICKER_TIME}, nil
 }
 
-func tickDiskRead(tracer *SystemTracer) int64 {
+func tickDiskRead(tracer *SystemTracer) uint64 {
 	evTime := GetEventTime()
 	stat, _ := tracer.proc.IO()
 	readBytes := stat.ReadBytes
@@ -146,7 +146,7 @@ func tickDiskRead(tracer *SystemTracer) int64 {
 	return evTime
 }
 
-func tickDiskWrite(tracer *SystemTracer) int64 {
+func tickDiskWrite(tracer *SystemTracer) uint64 {
 	evTime := GetEventTime()
 	stat, _ := tracer.proc.IO()
 	writeBytes := stat.WriteBytes
@@ -155,7 +155,7 @@ func tickDiskWrite(tracer *SystemTracer) int64 {
 	return evTime
 }
 
-func tickVirtualMemory(tracer *SystemTracer) int64 {
+func tickVirtualMemory(tracer *SystemTracer) uint64 {
 	evTime := GetEventTime()
 	stat, _ := tracer.proc.Stat()
 	allocatedVm := uint64(stat.VirtualMemory())
@@ -164,7 +164,7 @@ func tickVirtualMemory(tracer *SystemTracer) int64 {
 	return evTime
 }
 
-func tickResidentMemory(tracer *SystemTracer) int64 {
+func tickResidentMemory(tracer *SystemTracer) uint64 {
 	evTime := GetEventTime()
 	stat, _ := tracer.proc.Stat()
 	allocatedRss := uint64(stat.ResidentMemory())
@@ -173,7 +173,7 @@ func tickResidentMemory(tracer *SystemTracer) int64 {
 	return evTime
 }
 
-func tickDataVirtualMemory(tracer *SystemTracer) int64 {
+func tickDataVirtualMemory(tracer *SystemTracer) uint64 {
 	evTime := GetEventTime()
 	status, _ := tracer.proc.NewStatus()
 	allocatedVmData := uint64(status.VmData)
@@ -182,7 +182,7 @@ func tickDataVirtualMemory(tracer *SystemTracer) int64 {
 	return evTime
 }
 
-func tickCSTime(tracer *SystemTracer) int64 {
+func tickCSTime(tracer *SystemTracer) uint64 {
 	evTime := GetEventTime()
 	stat, _ := tracer.proc.Stat()
 	recordedCSTime := uint64(stat.CSTime)
@@ -191,7 +191,7 @@ func tickCSTime(tracer *SystemTracer) int64 {
 	return evTime
 }
 
-func tickCUTime(tracer *SystemTracer) int64 {
+func tickCUTime(tracer *SystemTracer) uint64 {
 	evTime := GetEventTime()
 	stat, _ := tracer.proc.Stat()
 	recordedCUTime := uint64(stat.CUTime)
@@ -200,7 +200,7 @@ func tickCUTime(tracer *SystemTracer) int64 {
 	return evTime
 }
 
-func tickSTime(tracer *SystemTracer) int64 {
+func tickSTime(tracer *SystemTracer) uint64 {
 	evTime := GetEventTime()
 	stat, _ := tracer.proc.Stat()
 	recordedSTime := uint64(stat.STime)
@@ -209,7 +209,7 @@ func tickSTime(tracer *SystemTracer) int64 {
 	return evTime
 }
 
-func tickUTime(tracer *SystemTracer) int64 {
+func tickUTime(tracer *SystemTracer) uint64 {
 	evTime := GetEventTime()
 	stat, _ := tracer.proc.Stat()
 	recordedUTime := uint64(stat.UTime)
@@ -218,7 +218,7 @@ func tickUTime(tracer *SystemTracer) int64 {
 	return evTime
 }
 
-func tickTXQueue(tracer *SystemTracer) int64 {
+func tickTXQueue(tracer *SystemTracer) uint64 {
 	evTime := GetEventTime()
 	summary, _ := tracer.fs.NetTCPSummary()
 	TXQLen := uint64(summary.TxQueueLength)
