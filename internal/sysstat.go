@@ -217,7 +217,7 @@ func (systemTracer *SystemTracer) Start() {
 			break
 		}
 		d := time.Since(t1).Microseconds()
-		time.Sleep((SYS_STAT_STEP - d) * time.Microsecond)
+		time.Sleep(time.Duration(SYS_STAT_STEP - d) * time.Microsecond)
 	}
 }
 
