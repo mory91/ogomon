@@ -15,7 +15,7 @@ const (
 )
 
 
-type DataTicker func(tracer *SystemTracer)
+type DataTicker func(tracer *SystemTracer) int64
 
 type SystemTracer struct {
 	proc         *procfs.Proc
