@@ -237,7 +237,7 @@ func (systemTracer *SystemTracer) Start() {
 			break
 		}
 		d := (uint64(time.Now().UnixNano()) - t1) / 1000
-		time.Sleep(time.Duration(SYS_STAT_STEP - d) * time.Microsecond)
+		//time.Sleep(time.Duration(SYS_STAT_STEP - d) * time.Microsecond)
 	}
 }
 
