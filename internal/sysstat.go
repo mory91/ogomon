@@ -27,6 +27,17 @@ type SystemTracer struct {
 	isStop       bool
 }
 
+func NewNetTCPV6Tracer(fs *procfs.FS, appendFile bool) (*SystemTracer, error) {
+	var logFile *os.File
+	if !appendFile {
+		logFile, _ = os.Create("records/TXQ6")
+	} else {
+		logFile, _ = os.OpenFile("records/TXQ6", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	}
+	writer := bufio.NewWriterSize(logFile, 16384)
+	return &SystemTracer{fs: fs, ticker: tickTXQueueV6, writer: writer, tickerTime: SYS_STAT_TICKER_TIME, logFile: logFile}, nil
+}
+
 func NewNetTCPTracer(fs *procfs.FS, appendFile bool) (*SystemTracer, error) {
 	var logFile *os.File
 	if !appendFile {
@@ -221,6 +232,15 @@ func tickUTime(tracer *SystemTracer) uint64 {
 func tickTXQueue(tracer *SystemTracer) uint64 {
 	evTime := GetEventTime()
 	summary, _ := tracer.fs.NetTCPSummary()
+	TXQLen := uint64(summary.TxQueueLength)
+	logData := fmt.Sprintf("%d,%d\n", evTime, TXQLen)
+	tracer.writer.WriteString(logData)
+	return evTime
+}
+
+func tickTXQueueV6(tracer *SystemTracer) uint64 {
+	evTime := GetEventTime()
+	summary, _ := tracer.fs.NetTCP6Summary()
 	TXQLen := uint64(summary.TxQueueLength)
 	logData := fmt.Sprintf("%d,%d\n", evTime, TXQLen)
 	tracer.writer.WriteString(logData)
