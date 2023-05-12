@@ -58,7 +58,7 @@ func (m Monitor) Start(appendFile bool) error {
 	TCP6TXTracer, err := internal.NewNetTCPV6Tracer(&m.fs, appendFile)
 	
 
-	tracers := []internal.Tracer{diskWriteTracer, diskReadTracer, residentMemoryTracer, memoryTracer, dataVirtualMemoryTracer, CSTimeTrace, CUTimeTrace, STimeTracer, UTimeTracer, TCPTXTracer}
+	tracers := []internal.Tracer{diskWriteTracer, diskReadTracer, residentMemoryTracer, memoryTracer, dataVirtualMemoryTracer, CSTimeTrace, CUTimeTrace, STimeTracer, UTimeTracer, TCPTXTracer, TCP6TXTracer}
 
 	go packetCaptureTracer.Start()
 
