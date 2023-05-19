@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 import argparse
 import sys
+import time
 from bcc import BPF
+
+kstime = time.time_ns() - time.monotonic_ns()
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-p", "--pid", default=None)
@@ -45,7 +48,7 @@ bpf = BPF(text=bpf_text)
 
 def callback(ctx, data, size):
     event = bpf['events'].event(data)
-    print("%d,%d" % (event.timestamp_ns, event.size))
+    print("%d,%d" % (event.timestamp_ns + kstime, event.size))
 
 
 bpf['events'].open_ring_buffer(callback)
