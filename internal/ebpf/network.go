@@ -18,7 +18,7 @@ const (
 )
 
 
-//go:generate go run github.com/cilium/ebpf/cmd/bpf2go@master -type event tcACL ../../ebpf/tc_acl.c -- -I../../ebpf/include -nostdinc -O3
+//go:generate go run github.com/cilium/ebpf/cmd/bpf2go@main -type event tcACL ../../ebpf/tc_acl.c -- -I../../ebpf/include -nostdinc -O3
 
 type NetworkTracer struct {
 	srcPort      int
