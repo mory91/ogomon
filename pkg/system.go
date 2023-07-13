@@ -89,7 +89,12 @@ func CreateProcessAndPipeToFile(cmd *exec.Cmd, filename string, appendFile bool)
 	cmd.Stderr = &errbuf
 	err = cmd.Start()
 	if err != nil {
+		fmt.Println(err)
 		panic(err)
 	}
-	cmd.Wait()
+	err = cmd.Wait()
+	if err != nil {
+		fmt.Println(fmt.Sprint(err) + ": " + errbuf.String())
+		panic(err)
+	}
 }

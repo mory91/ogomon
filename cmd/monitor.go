@@ -73,13 +73,15 @@ func (m Monitor) Start(appendFile bool) error {
 
 	// external commands section
 	cpuMemCommand := exec.Command("sudo", "./python/cpu_mem.py", "-p", fmt.Sprintf("%d", stat.PID), "-s", strconv.FormatInt(memoryTracer.GetTickerTime().Nanoseconds(), 10))
-	cudaMemCommand := exec.Command("sudo", "./python/cuda_mem.py", "-p", fmt.Sprintf("%d", stat.PID), "-s", strconv.FormatInt(memoryTracer.GetTickerTime().Nanoseconds(), 10))
+	// FOR CUDA ENV
+	// cudaMemCommand := exec.Command("sudo", "./python/cuda_mem.py", "-p", fmt.Sprintf("%d", stat.PID), "-s", strconv.FormatInt(memoryTracer.GetTickerTime().Nanoseconds(), 10))
 	sendCommand := exec.Command("sudo", "./python/send.py", "-p", fmt.Sprintf("%d", stat.PID))
-	kcacheCommand := exec.Command("sudo", "./python/kcache.py", "-p", fmt.Sprintf("%d", stat.PID))
-	go pkg.CreateProcessAndPipeToFile(cpuMemCommand, "./records/cpu_allocations", appendFile)
-	go pkg.CreateProcessAndPipeToFile(cudaMemCommand, "./records/cuda_allocations", appendFile)
+	//kcacheCommand := exec.Command("sudo", "./python/kcache.py", "-p", fmt.Sprintf("%d", stat.PID))
+	// FOR CUDA ENV
+	// go pkg.CreateProcessAndPipeToFile(cudaMemCommand, "./records/cuda_allocations", appendFile)
 	go pkg.CreateProcessAndPipeToFile(sendCommand, "./records/sends", appendFile)
-	go pkg.CreateProcessAndPipeToFile(kcacheCommand, "./records/kcache", appendFile)
+	//go pkg.CreateProcessAndPipeToFile(kcacheCommand, "./records/kcache", appendFile)
+	go pkg.CreateProcessAndPipeToFile(cpuMemCommand, "./records/cpu_allocations", appendFile)
 	// external commands section
 
 	if err != nil {
@@ -90,8 +92,9 @@ func (m Monitor) Start(appendFile bool) error {
 	
 	cpuMemCommand.Process.Kill()
 	sendCommand.Process.Kill()
-	cudaMemCommand.Process.Kill()
-	kcacheCommand.Process.Kill()
+	// FOR CUDA ENV
+	//cudaMemCommand.Process.Kill()
+	//kcacheCommand.Process.Kill()
 
 	for _, t := range tracers {
 		t.Stop()
@@ -115,7 +118,6 @@ func monitorProcess(proc procfs.Proc, fs procfs.FS, cancelChan chan bool, append
 
 func newOgomon(exeName string, pid int, notFoundChan chan bool, cancelChan chan bool, appendFile bool) {
 	proc, err := pkg.GetTargetProc(exeName, pid)
-	fs, err := procfs.NewDefaultFS()
 	found := false
 	if err != nil {
 		found = false
@@ -133,6 +135,7 @@ func newOgomon(exeName string, pid int, notFoundChan chan bool, cancelChan chan 
 			os.Exit(1)
 		}
 	}
+	fs, err := procfs.NewDefaultFS()
 	go func(process procfs.Proc) {
 		var errTarget *os.PathError
 		for {
