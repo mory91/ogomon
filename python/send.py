@@ -1,3 +1,9 @@
+<<<<<<< HEAD
+=======
+#!/usr/bin/env python3
+import argparse
+import sys
+>>>>>>> 4d6cd6c (For aws)
 import time
 from bcc import BPF
 
