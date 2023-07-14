@@ -86,6 +86,7 @@ func (m Monitor) Start(appendFile bool) error {
 	// FOR CUDA ENV
 	go pkg.CreateProcessAndPipeToFile(cudaMemCommand, "./records/cuda_allocations", appendFile)
 	go pkg.CreateProcessAndPipeToFile(cudaCollectiveCommand, "./records/cuda_allocations", appendFile)
+	go pkg.CreateProcessAndPipeToFile(kcacheCommand, "./records/kcache", appendFile)
 	go pkg.CreateProcessAndPipeToFile(cpuMemCommand, "./records/cpu_allocations", appendFile)
 	go pkg.CreateProcessAndPipeToFile(sendToCommand, "./records/sendto", appendFile)
 	go pkg.CreateProcessAndPipeToFile(sendMsgCommand, "./records/sendmsg", appendFile)
