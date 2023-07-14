@@ -76,11 +76,11 @@ func (m Monitor) Start(appendFile bool) error {
 	// FOR CUDA ENV
 	// cudaMemCommand := exec.Command("sudo", "./python/cuda_mem.py", "-p", fmt.Sprintf("%d", stat.PID), "-s", strconv.FormatInt(memoryTracer.GetTickerTime().Nanoseconds(), 10))
 	sendCommand := exec.Command("sudo", "./python/send.py", "-p", fmt.Sprintf("%d", stat.PID))
-	//kcacheCommand := exec.Command("sudo", "./python/kcache.py", "-p", fmt.Sprintf("%d", stat.PID))
+	kcacheCommand := exec.Command("sudo", "./python/kcache.py", "-p", fmt.Sprintf("%d", stat.PID))
 	// FOR CUDA ENV
 	// go pkg.CreateProcessAndPipeToFile(cudaMemCommand, "./records/cuda_allocations", appendFile)
 	go pkg.CreateProcessAndPipeToFile(sendCommand, "./records/sends", appendFile)
-	//go pkg.CreateProcessAndPipeToFile(kcacheCommand, "./records/kcache", appendFile)
+	go pkg.CreateProcessAndPipeToFile(kcacheCommand, "./records/kcache", appendFile)
 	go pkg.CreateProcessAndPipeToFile(cpuMemCommand, "./records/cpu_allocations", appendFile)
 	// external commands section
 
@@ -94,7 +94,7 @@ func (m Monitor) Start(appendFile bool) error {
 	sendCommand.Process.Kill()
 	// FOR CUDA ENV
 	//cudaMemCommand.Process.Kill()
-	//kcacheCommand.Process.Kill()
+	kcacheCommand.Process.Kill()
 
 	for _, t := range tracers {
 		t.Stop()
