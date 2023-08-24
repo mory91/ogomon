@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"runtime/trace"
 	"time"
 
 	"github.com/prometheus/procfs"
@@ -25,6 +26,17 @@ type SystemTracer struct {
 	logFile      *os.File
 	writer       *bufio.Writer
 	isStop       bool
+}
+
+func NewMemAvaibaleTracer(fs *procfs.FS, appendFile bool) (*SystemTracer, error) {
+	var logFile *os.File
+	if !appendFile {
+		logFile, _ = os.Create("records/memavailable")
+	} else {
+		logFile, _ = os.OpenFile("records/memavailable", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	}
+	writer := bufio.NewWriterSize(logFile, 16384)
+	return &SystemTracer{fs: fs, ticker: tickMemAvailable, writer: writer, tickerTime: SYS_STAT_TICKER_TIME, logFile: logFile}, nil
 }
 
 func NewNetTCPV6Tracer(fs *procfs.FS, appendFile bool) (*SystemTracer, error) {
@@ -146,6 +158,15 @@ func NewCUTimeTracer(proc *procfs.Proc, appendFile bool) (*SystemTracer, error) 
 	}
 	writer := bufio.NewWriterSize(logFile, 8192)
 	return &SystemTracer{proc: proc, logFile: logFile, ticker: tickCUTime, writer: writer, tickerTime: SYS_STAT_TICKER_TIME}, nil
+}
+
+func tickMemAvailable(tracer *SystemTracer) uint64 {
+	evTime := GetEventTime()
+	stat, _ := tracer.fs.Meminfo()
+	memAvailable := stat.MemAvailable
+	logData := fmt.Sprintf("%d,%d\n", evTime, memAvailable)
+	tracer.writer.WriteString(logData)
+	return evTime
 }
 
 func tickDiskRead(tracer *SystemTracer) uint64 {
