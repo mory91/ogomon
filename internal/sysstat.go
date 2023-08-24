@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"runtime/trace"
 	"time"
 
 	"github.com/prometheus/procfs"
