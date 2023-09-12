@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-import argparse
-import sys
 import time
 from bcc import BPF
 
