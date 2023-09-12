@@ -35,9 +35,8 @@ static inline bool send_return(struct pt_regs *ctx)
 
 
 def get_bpf(pid):
-    global bpf_text
-    bpf_text = bpf_text.replace("__PID__", pid)
-    return BPF(text=bpf_text)
+    bpf_pid_text = bpf_text.replace("__PID__", pid)
+    return BPF(text=bpf_pid_text)
 
 
 def get_call_back(bpf):
