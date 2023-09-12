@@ -18,7 +18,7 @@ struct event {
 };
 BPF_RINGBUF_OUTPUT(events, 1 << 12);
 
-static inline bool send_return(struct pt_regs *ctx)
+bool send_return(struct pt_regs *ctx)
 {
     u64 id = bpf_get_current_pid_tgid();
     if (id >> 32 != __PID__) { return 0; }

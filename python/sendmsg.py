@@ -11,7 +11,7 @@ if args.pid is None:
     exit(0)
 
 bpf_obj = get_bpf(args.pid)
-bpf_obj.attach_kretprobe(event="__sys_sendto", fn_name="send_return")
+bpf_obj.attach_kretprobe(event="__sys_sendmsg", fn_name="send_return")
 cb = get_call_back(bpf_obj)
 bpf_obj['events'].open_ring_buffer(cb)
 
