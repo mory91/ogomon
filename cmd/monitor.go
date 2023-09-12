@@ -74,8 +74,8 @@ func (m Monitor) Start(appendFile bool) error {
 	// external commands section
 	cpuMemCommand := exec.Command("sudo", "./python/cpu_mem.py", "-p", fmt.Sprintf("%d", stat.PID), "-s", strconv.FormatInt(memoryTracer.GetTickerTime().Nanoseconds(), 10))
 	cudaMemCommand := exec.Command("sudo", "./python/cuda_mem.py", "-p", fmt.Sprintf("%d", stat.PID), "-s", strconv.FormatInt(memoryTracer.GetTickerTime().Nanoseconds(), 10))
-	sendMsgCommand := exec.Command("sudo", "./python/sendto.py", "-p", fmt.Sprintf("%d", stat.PID))
-	sendToCommand := exec.Command("sudo", "./python/sendmsg.py", "-p", fmt.Sprintf("%d", stat.PID))
+	sendMsgCommand := exec.Command("sudo", "./python/sendmsg.py", "-p", fmt.Sprintf("%d", stat.PID))
+	sendToCommand := exec.Command("sudo", "./python/sendto.py", "-p", fmt.Sprintf("%d", stat.PID))
 	kcacheCommand := exec.Command("sudo", "./python/kcache.py", "-p", fmt.Sprintf("%d", stat.PID))
 	go pkg.CreateProcessAndPipeToFile(cpuMemCommand, "./records/cpu_allocations", appendFile)
 	go pkg.CreateProcessAndPipeToFile(cudaMemCommand, "./records/cuda_allocations", appendFile)
