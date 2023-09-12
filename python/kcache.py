@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import time
 import sys
 import argparse
@@ -16,6 +16,85 @@ bpf_text = """
 #include <uapi/linux/ptrace.h>
 #include <linux/mm.h>
 #include <linux/kasan.h>
+
+// memcg_cache_params is a part of kmem_cache, but is not publicly exposed in
+// kernel versions 5.4 to 5.8.  Define an empty struct for it here to allow the
+// bpf program to compile.  It has been completely removed in kernel version
+// 5.9, but it does not hurt to have it here for versions 5.4 to 5.8.
+struct memcg_cache_params {};
+
+// introduce kernel interval slab structure and slab_address() function, solved
+// 'undefined' error for >=5.16. TODO: we should fix this workaround if BCC
+// framework support BTF/CO-RE.
+struct slab {
+    unsigned long __page_flags;
+
+#if defined(CONFIG_SLAB)
+
+    struct kmem_cache *slab_cache;
+    union {
+        struct {
+            struct list_head slab_list;
+            void *freelist; /* array of free object indexes */
+            void *s_mem;    /* first object */
+        };
+        struct rcu_head rcu_head;
+    };
+    unsigned int active;
+
+#elif defined(CONFIG_SLUB)
+
+    struct kmem_cache *slab_cache;
+    union {
+        struct {
+            union {
+                struct list_head slab_list;
+#ifdef CONFIG_SLUB_CPU_PARTIAL
+                struct {
+                    struct slab *next;
+                        int slabs;      /* Nr of slabs left */
+                };
+#endif
+            };
+            /* Double-word boundary */
+            void *freelist;         /* first free object */
+            union {
+                unsigned long counters;
+                struct {
+                    unsigned inuse:16;
+                    unsigned objects:15;
+                    unsigned frozen:1;
+                };
+            };
+        };
+        struct rcu_head rcu_head;
+    };
+    unsigned int __unused;
+
+#elif defined(CONFIG_SLOB)
+
+    struct list_head slab_list;
+    void *__unused_1;
+    void *freelist;         /* first free block */
+    long units;
+    unsigned int __unused_2;
+
+#else
+#error "Unexpected slab allocator configured"
+#endif
+
+    atomic_t __page_refcount;
+#ifdef CONFIG_MEMCG
+    unsigned long memcg_data;
+#endif
+};
+
+// slab_address() will not be used, and NULL will be returned directly, which
+// can avoid adaptation of different kernel versions
+static inline void *slab_address(const struct slab *slab)
+{
+    return NULL;
+}
 
 #ifdef CONFIG_SLUB
 #include <linux/slub_def.h>
