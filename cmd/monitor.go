@@ -77,11 +77,15 @@ func (m Monitor) Start(appendFile bool) error {
 	sendMsgCommand := exec.Command("sudo", "./python/sendmsg.py", "-p", fmt.Sprintf("%d", stat.PID))
 	sendToCommand := exec.Command("sudo", "./python/sendto.py", "-p", fmt.Sprintf("%d", stat.PID))
 	kcacheCommand := exec.Command("sudo", "./python/kcache.py", "-p", fmt.Sprintf("%d", stat.PID))
+	writeCommand := exec.Command("sudo", "./python/write.py", "-p", fmt.Sprintf("%d", stat.PID))
+	tcpSendMsgCommand := exec.Command("sudo", "./python/tcpsendmsg.py", "-p", fmt.Sprintf("%d", stat.PID))
 	go pkg.CreateProcessAndPipeToFile(cpuMemCommand, "./records/cpu_allocations", appendFile)
 	go pkg.CreateProcessAndPipeToFile(cudaMemCommand, "./records/cuda_allocations", appendFile)
 	go pkg.CreateProcessAndPipeToFile(sendToCommand, "./records/sendto", appendFile)
 	go pkg.CreateProcessAndPipeToFile(sendMsgCommand, "./records/sendmsg", appendFile)
 	go pkg.CreateProcessAndPipeToFile(kcacheCommand, "./records/kcache", appendFile)
+	go pkg.CreateProcessAndPipeToFile(writeCommand, "./records/write", appendFile)
+	go pkg.CreateProcessAndPipeToFile(tcpSendMsgCommand, "./records/tcpsendmsg", appendFile)
 	// external commands section
 
 	if err != nil {
@@ -95,6 +99,8 @@ func (m Monitor) Start(appendFile bool) error {
 	sendMsgCommand.Process.Kill()
 	cudaMemCommand.Process.Kill()
 	kcacheCommand.Process.Kill()
+	writeCommand.Process.Kill()
+	tcpSendMsgCommand.Process.Kill()
 
 	for _, t := range tracers {
 		t.Stop()
