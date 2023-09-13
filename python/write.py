@@ -1,7 +1,8 @@
 import time
 import argparse
 import sys
-from send import get_bpf, get_call_back
+from bcc import BPF
+from send import get_call_back
 
 kstime = time.time_ns() - time.monotonic_ns()
 
@@ -21,7 +22,7 @@ struct write_event {
 };
 
 BPF_RINGBUF_OUTPUT(events, 1 << 12);
-BPF_HASH(write_events, 1 << 12);
+BPF_HASH(write_events, uint64_t, struct write_event);
 
 int syscall__probe_entry_write(struct pt_regs* ctx, int fd, char* buf, size_t count) {
     uint64_t id = bpf_get_current_pid_tgid();
@@ -45,7 +46,7 @@ int probe_entry_security_socket_sendmsg(struct pt_regs *ctx)
 int syscall__probe_ret_write(struct pt_regs* ctx) {
     uint64_t id = bpf_get_current_pid_tgid();
     struct write_event* wevent = write_events.lookup(&id);
-    if (wvent != NULL && wevent->sock_event) {
+    if (wevent != NULL && wevent->sock_event) {
         int size = PT_REGS_RC(ctx);
         u64 time = bpf_ktime_get_ns();
         struct event event = {
@@ -67,7 +68,9 @@ if args.pid is None:
     print("PID must set")
     exit(0)
 
-bpf_obj = get_bpf(args.pid)
+bpf_text = bpf_text.replace("__PID__", args.pid)
+
+bpf_obj = BPF(text=bpf_text)
 bpf_obj.attach_kprobe(
     event="security_socket_sendmsg",
     fn_name="probe_entry_security_socket_sendmsg"
