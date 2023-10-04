@@ -15,8 +15,8 @@ require (
 require (
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/vishvananda/netns v0.0.0-20191106174202-0a2b9b5464df // indirect
+	github.com/vishvananda/netns v0.0.0-20210104183010-2eb08e3e575f // indirect
 	golang.org/x/exp v0.0.0-20230224173230-c95f2b4c22f2 // indirect
 )
 
-replace github.com/google/gopacket => github.com/mory91/gopacket latest
+replace github.com/google/gopacket => github.com/mory91/gopacket v0.0.0-20231004212251-48fe8232857e
