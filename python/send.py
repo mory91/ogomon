@@ -36,8 +36,16 @@ def get_bpf(pid):
     return BPF(text=bpf_pid_text)
 
 
-def get_call_back(bpf):
+def get_call_back(bpf, with_fd=False):
+    def callback_with_fd(ctx, data, size):
+        event = bpf['events'].event(data)
+        print("%d,%d,%d" % (event.timestamp_ns + kstime, event.size, event.fd))
+
     def callback(ctx, data, size):
         event = bpf['events'].event(data)
         print("%d,%d" % (event.timestamp_ns + kstime, event.size))
+
+    if with_fd:
+        return callback_with_fd
+
     return callback
