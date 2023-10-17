@@ -14,7 +14,7 @@ if args.pid is None:
 
 bpf_obj = get_bpf(args.pid)
 bpf_obj.attach_kprobe(event="__sys_sendmsg", fn_name="send_entry")
-cb = get_call_back(bpf_obj)
+cb = get_call_back(bpf_obj, only_fd=True)
 bpf_obj['events'].open_ring_buffer(cb)
 
 while True:
