@@ -56,7 +56,7 @@ int syscall__probe_ret_write(struct pt_regs* ctx) {
         u64 time = bpf_ktime_get_ns();
         struct event event = {
             .size = size,
-            .timestamp_ns = time
+            .timestamp_ns = time,
             .fd = fd
         };
         events.ringbuf_output(&event, sizeof(event), 0);
