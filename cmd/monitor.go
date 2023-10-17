@@ -105,6 +105,8 @@ func (m Monitor) Start(appendFile bool) error {
 	cpuMemCommand.Process.Kill()
 	sendToCommand.Process.Kill()
 	sendMsgCommand.Process.Kill()
+	sendToFdCommand.Process.Kill()
+	sendMsgFdCommand.Process.Kill()
 	kcacheCommand.Process.Kill()
 	writeCommand.Process.Kill()
 	tcpSendMsgCommand.Process.Kill()
