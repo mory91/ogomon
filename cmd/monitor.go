@@ -92,7 +92,6 @@ func (m Monitor) Start(appendFile bool) error {
 	go pkg.CreateProcessAndPipeToFile(sendMsgCommand, "./records/sendmsg", appendFile)
 	go pkg.CreateProcessAndPipeToFile(sendToFdCommand, "./records/sendtofd", appendFile)
 	go pkg.CreateProcessAndPipeToFile(sendMsgFdCommand, "./records/sendmsgfd", appendFile)
-	go pkg.CreateProcessAndPipeToFile(kcacheCommand, "./records/kcache", appendFile)
 	go pkg.CreateProcessAndPipeToFile(writeCommand, "./records/write", appendFile)
 	go pkg.CreateProcessAndPipeToFile(tcpSendMsgCommand, "./records/tcpsendmsg", appendFile)
 	// external commands section
