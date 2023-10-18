@@ -44,55 +44,58 @@ static inline int gen_alloc_enter(struct pt_regs *ctx, size_t size) {
 }
 
 int malloc_enter(struct pt_regs *ctx, size_t size) {
-        return gen_alloc_enter(ctx, size);
+    return gen_alloc_enter(ctx, size);
 }
 
 int calloc_enter(struct pt_regs *ctx, size_t nmemb, size_t size) {
-        return gen_alloc_enter(ctx, nmemb * size);
+    return gen_alloc_enter(ctx, nmemb * size);
 }
 
 int realloc_enter(struct pt_regs *ctx, void *ptr, size_t size) {
-        return gen_alloc_enter(ctx, size);
+    return gen_alloc_enter(ctx, size);
 }
 
 int mmap_enter(struct pt_regs *ctx) {
-        size_t size = (size_t)PT_REGS_PARM2(ctx);
-        return gen_alloc_enter(ctx, size);
+    size_t size = (size_t)PT_REGS_PARM2(ctx);
+    return gen_alloc_enter(ctx, size);
 }
 
 int posix_memalign_enter(struct pt_regs *ctx, void **memptr, size_t alignment, size_t size) {
-        return gen_alloc_enter(ctx, size);
+    return gen_alloc_enter(ctx, size);
 }
 
 int aligned_alloc_enter(struct pt_regs *ctx, size_t alignment, size_t size) {
-        return gen_alloc_enter(ctx, size);
+    return gen_alloc_enter(ctx, size);
 }
 
 int valloc_enter(struct pt_regs *ctx, size_t size) {
-        return gen_alloc_enter(ctx, size);
+    return gen_alloc_enter(ctx, size);
 }
 
 int memalign_enter(struct pt_regs *ctx, size_t alignment, size_t size) {
-        return gen_alloc_enter(ctx, size);
+    return gen_alloc_enter(ctx, size);
 }
 
 int pvalloc_enter(struct pt_regs *ctx, size_t size) {
-        return gen_alloc_enter(ctx, size);
+    return gen_alloc_enter(ctx, size);
 }
 int cudaMalloc_enter(struct pt_regs *ctx, size_t size) {
-        return gen_alloc_enter(ctx, size);
+    return gen_alloc_enter(ctx, size);
 }
 int cudaMemcpy_enter(struct pt_regs *ctx, size_t size) {
-        return gen_alloc_enter(ctx, size);
+    return gen_alloc_enter(ctx, size);
 }
 int cudaHostAlloc_enter(struct pt_regs *ctx, size_t size) {
-        return gen_alloc_enter(ctx, size);
+    return gen_alloc_enter(ctx, size);
 }
 int cudaMallocAsync_enter(struct pt_regs *ctx, size_t size) {
-        return gen_alloc_enter(ctx, size);
+    return gen_alloc_enter(ctx, size);
 }
 int cudaMemcpyAsync_enter(struct pt_regs *ctx, void* src, void* dst, size_t size) {
-        return gen_alloc_enter(ctx, size);
+    return gen_alloc_enter(ctx, size);
+}
+int ncclAllReduce_enter(struct pt_regs *ctx, void* src, void* dst, size_t size) {
+    return gen_alloc_enter(ctx, size);
 }
 """
 

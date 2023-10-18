@@ -74,6 +74,7 @@ func (m Monitor) Start(appendFile bool) error {
 	// external commands section
 	// FOR CUDA ENV
 	// cudaMemCommand := exec.Command("sudo", "./python/cuda_mem.py", "-p", fmt.Sprintf("%d", stat.PID), "-s", strconv.FormatInt(memoryTracer.GetTickerTime().Nanoseconds(), 10))
+	// cudaCollectiveCommand := exec.Command("sudo", "./python/collective.py", "-p", fmt.Sprintf("%d", stat.PID), "-s", strconv.FormatInt(memoryTracer.GetTickerTime().Nanoseconds(), 10))
 	cpuMemCommand := exec.Command("sudo", "./python/cpu_mem.py", "-p", fmt.Sprintf("%d", stat.PID), "-s", strconv.FormatInt(memoryTracer.GetTickerTime().Nanoseconds(), 10))
 	sendMsgCommand := exec.Command("sudo", "./python/sendmsg.py", "-p", fmt.Sprintf("%d", stat.PID))
 	sendToCommand := exec.Command("sudo", "./python/sendto.py", "-p", fmt.Sprintf("%d", stat.PID))
@@ -84,6 +85,7 @@ func (m Monitor) Start(appendFile bool) error {
 	tcpSendMsgCommand := exec.Command("sudo", "./python/tcpsendmsg.py", "-p", fmt.Sprintf("%d", stat.PID))
 	// FOR CUDA ENV
 	// go pkg.CreateProcessAndPipeToFile(cudaMemCommand, "./records/cuda_allocations", appendFile)
+	// go pkg.CreateProcessAndPipeToFile(cudaCollectiveCommand, "./records/cuda_allocations", appendFile)
 	go pkg.CreateProcessAndPipeToFile(cpuMemCommand, "./records/cpu_allocations", appendFile)
 	go pkg.CreateProcessAndPipeToFile(sendToCommand, "./records/sendto", appendFile)
 	go pkg.CreateProcessAndPipeToFile(sendMsgCommand, "./records/sendmsg", appendFile)
@@ -101,7 +103,8 @@ func (m Monitor) Start(appendFile bool) error {
 	<-m.cancelChan
 	
 	// FOR CUDA ENV
-	//cudaMemCommand.Process.Kill()
+	// cudaMemCommand.Process.Kill()
+	// cudaCollectiveCommand.Process.Kill()
 	cpuMemCommand.Process.Kill()
 	sendToCommand.Process.Kill()
 	sendMsgCommand.Process.Kill()
