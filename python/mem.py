@@ -97,6 +97,9 @@ int cudaMemcpyAsync_enter(struct pt_regs *ctx, void* src, void* dst, size_t size
 int ncclAllReduce_enter(struct pt_regs *ctx, void* src, void* dst, size_t size) {
     return gen_alloc_enter(ctx, size);
 }
+int ncclBroadcast_enter(struct pt_regs *ctx, void* src, void* dst, size_t size) {
+    return gen_alloc_enter(ctx, size);
+}
 """
 
 
