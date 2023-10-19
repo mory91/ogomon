@@ -85,7 +85,7 @@ func (m Monitor) Start(appendFile bool) error {
 	tcpSendMsgCommand := exec.Command("sudo", "./python/tcpsendmsg.py", "-p", fmt.Sprintf("%d", stat.PID))
 	// FOR CUDA ENV
 	go pkg.CreateProcessAndPipeToFile(cudaMemCommand, "./records/cuda_allocations", appendFile)
-	go pkg.CreateProcessAndPipeToFile(cudaCollectiveCommand, "./records/cuda_allocations", appendFile)
+	go pkg.CreateProcessAndPipeToFile(cudaCollectiveCommand, "./records/cuda_collective", appendFile)
 	go pkg.CreateProcessAndPipeToFile(kcacheCommand, "./records/kcache", appendFile)
 	go pkg.CreateProcessAndPipeToFile(cpuMemCommand, "./records/cpu_allocations", appendFile)
 	go pkg.CreateProcessAndPipeToFile(sendToCommand, "./records/sendto", appendFile)
