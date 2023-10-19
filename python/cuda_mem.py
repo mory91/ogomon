@@ -23,7 +23,7 @@ bpf_source = get_bpf_source()
 bpf_source = bpf_source.replace("SAMPLE_EVERY_N", str(sample_every_n))
 bpf = BPF(text=bpf_source)
 
-cudart_lib = "/opt/conda/envs/pytorch/lib/libcudart.so.11.0"
+cudart_lib = "/opt/conda/envs/pytorch/lib/libcudart.so.12.1.105"
 
 attach_probes(bpf, "cudaMalloc", name=cudart_lib)
 attach_probes(bpf, "cudaHostAlloc", name=cudart_lib)
